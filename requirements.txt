@@ -1,0 +1,16 @@
+--index-url https://download.pytorch.org/whl/cpu
+--extra-index-url https://pypi.org/simple
+numpy
+matplotlib
+torch
+standard-imghdr
+tensorboard>=2.4.1
+easydict
+gymnasium
+moviepy
+zmq
+msgpack
+msgpack_numpy
+scikit-image
+jupyter
+jupyterlab
