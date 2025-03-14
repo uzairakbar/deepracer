@@ -1,0 +1,15 @@
+def response(agent, env, env_response):
+    reward_params = {}
+    for env_agent in env.agent_list:
+        agent_id = (
+            'agent' if len(agent.name.split("_")) <= 1 
+            else agent.name.split("_")[-1]
+        )
+        racecar_id = (
+            'racecar' if len(env_agent.ctrl._agent_name_.split("_")) <= 1 
+            else env_agent.ctrl._agent_name_.split("_")[-1]
+        )
+        if agent_id == racecar_id:
+            reward_params = env_agent.ctrl._reward_params_
+    env_response.info['reward_params'] = reward_params
+    return env_response
