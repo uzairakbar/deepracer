@@ -1,0 +1,59 @@
+import json
+import numpy as np
+from gymnasium import spaces
+
+
+LIDAR_SHAPE: tuple[int, ...]=(64, 1)
+STEREO_SHAPE: tuple[int, ...]=(120, 160, 2)
+SENSOR_SPACE: dict[str, spaces.Box]={
+    'STEREO_CAMERAS': spaces.Box(
+                low=0, high=255, shape=STEREO_SHAPE, dtype=np.uint8
+    ),
+    'LIDAR': spaces.Box(
+        low=0.15, high=2, shape=LIDAR_SHAPE, dtype=np.float32
+    ),
+    # TODO: Look into implementing these!
+    'FRONT_FACING_CAMERA': None,
+    'SECTOR_LIDAR': None,
+    'LEFT_CAMERA': None,
+    'observation': None
+}
+
+
+def make_action_space(config_path: str='configs/model_metadata.json'):
+    with open(config_path, 'r') as file:
+        config = json.load(file)
+    action_space: list[dict[str, float]]=config['action_space']
+    if 'action_space_type' in config:
+        if config['action_space_type'] == 'discrete':
+            return spaces.Discrete(
+                len(action_space)
+            )
+        elif config['action_space_type'] == 'continuous':
+            raise NotImplementedError
+        else:
+            raise NotImplementedError
+    else:
+        if isinstance(action_space, list):
+            # assuming discrete
+            return spaces.Discrete(
+                len(action_space)
+            )
+        elif isinstance(action_space, dict):
+            # assuming continuous
+            raise NotImplementedError
+        else:
+            raise NotImplementedError
+
+
+def make_observation_space(config_path: str='configs/model_metadata.json'):
+    with open(config_path, 'r') as file:
+        config = json.load(file)
+    sensors: list[str]=config['sensor']
+    
+    for sensor in sensors:
+        assert sensor in SENSOR_SPACE, f'Sensor {sensor} not supported!'
+
+    return spaces.Dict({
+        sensor: SENSOR_SPACE[sensor] for sensor in sensors
+    })
