@@ -19,7 +19,7 @@ source scripts/start_deepracer.sh \
 
 ## Usage
 ```python
-import gym
+import gymnasium as gym
 import deepracer_gym
 
 env = gym.make(
