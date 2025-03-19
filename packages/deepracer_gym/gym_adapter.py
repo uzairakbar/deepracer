@@ -41,8 +41,10 @@ class DeepracerGymAdapter:
             # Action ignored due to reset()
             self.response = self._send_action_get_response(DUMMY_ACTION)
         
+        if not isinstance(self.response['info'], dict):
+            self.response['info'] = dict()
+        self.response['info']['reward_params'] = RewardParam.make_default_param()
         observation, _, _, _, info = self._parse_response(self.response)
-        info['reward_params'] = RewardParam.make_default_param()
         return observation, info
     
     def send_action(self, action: int):
@@ -53,8 +55,8 @@ class DeepracerGymAdapter:
     @staticmethod
     def _parse_response(response: dict):
         info = response['info']
-        if type(info) is not dict:
-            info = {}
+        if not isinstance(info, dict):
+            info = dict()
         info['goal'] = response['_goal']
 
         game_over = response['_game_over']
