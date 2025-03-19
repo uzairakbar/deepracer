@@ -5,12 +5,13 @@ matplotlib
 torch
 standard-imghdr
 tensorboard>=2.4.1
-easydict
+munch
 gymnasium
 moviepy
 zmq
 msgpack
 msgpack_numpy
+enlighten
 scikit-image
 jupyter
 jupyterlab
