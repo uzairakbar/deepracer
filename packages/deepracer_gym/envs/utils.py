@@ -12,7 +12,11 @@ SENSOR_SPACE: dict[str, spaces.Box]={
     'LIDAR': spaces.Box(
         low=0.15, high=2, shape=LIDAR_SHAPE, dtype=np.float32
     ),
-    'FRONT_FACING_CAMERA': None # TODO: Look into implementing this!
+    # TODO: Look into implementing these!
+    'FRONT_FACING_CAMERA': None,
+    'SECTOR_LIDAR': None,
+    'LEFT_CAMERA': None,
+    'observation': None
 }
 
 
