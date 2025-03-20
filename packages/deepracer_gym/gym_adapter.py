@@ -11,7 +11,7 @@ PORT: int=8888
 HOST: str='127.0.0.1'
 TIMEOUT_LONG: int=600_000   # 10m
 TIMEOUT_SHORT: int=20_000   # 20s
-DUMMY_ACTION: int=4
+DUMMY_ACTION: int=0
 
 
 class DeepracerGymAdapter:
