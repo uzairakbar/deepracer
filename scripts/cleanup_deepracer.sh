@@ -1,5 +1,4 @@
 #!/bin/bash
-set -e
 export container=deepracer
 docker rm "$container"
 
@@ -10,3 +9,5 @@ export base=uzairakbar/deepracer:v0
 docker image rm -f "$base"
 
 docker system prune --force
+
+conda remove --name deepracer --all
