@@ -63,3 +63,12 @@ def make_observation_space(config_path: str='configs/model_metadata.json'):
     return spaces.Dict({
         sensor: SENSOR_SPACE[sensor] for sensor in sensors
     })
+
+
+def num_channels(measurement: np.array):
+    dimensions = len(measurement.shape)
+    if dimensions == 2:
+        channels = 1
+    elif dimensions == 3:
+        channels = measurement.shape[0]
+    return channels

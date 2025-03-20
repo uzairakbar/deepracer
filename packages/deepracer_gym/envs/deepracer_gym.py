@@ -1,10 +1,10 @@
 import numpy as np
 import gymnasium as gym
 import matplotlib.pyplot as plt
-from deepracer_gym.envs.utils import (
-    make_action_space, make_observation_space
-)
 from deepracer_gym.gym_adapter import DeepracerGymAdapter
+from deepracer_gym.envs.utils import (
+    make_action_space, make_observation_space, num_channels
+)
 
 
 PORT: int=8888
@@ -47,14 +47,14 @@ class DeepracerGymEnv(gym.Env):
                 f'Cannot render output of sensors {list(observation.keys())}.'
             )
         
-        channels, _, _ = measurement.shape
+        channels = num_channels(measurement)
         if channels == 2:
             # stereo camera
             measurement = np.hstack((
                 measurement[0, :, :], measurement[1, :, :]
             ))
         
-        channels, _, _ = measurement.shape
+        channels = num_channels(measurement)
         if channels == 1:
             # greyscale image
             measurement = np.stack(
