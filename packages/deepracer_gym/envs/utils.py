@@ -4,17 +4,18 @@ from gymnasium import spaces
 
 
 LIDAR_SHAPE: tuple[int, ...]=(64,)
-CAMERA_SHAPE: tuple[int, ...]=(120, 160)            # H x W
-STEREO_SHAPE: tuple[int, ...]=(2,)+CAMERA_SHAPE     # C x H x W
+CAMERA_SHAPE: tuple[int, ...]=(120, 160)                        # H x W
+STEREO_CAMERA_SHAPE: tuple[int, ...]=(2,)+CAMERA_SHAPE          # C x H x W
+FRONT_FACING_CAMERA_SHAPE: tuple[int, ...]=(3,)+CAMERA_SHAPE    # C x H x W
 SENSOR_SPACE: dict[str, spaces.Box]={
     'LIDAR': spaces.Box(
         low=0.15, high=float('inf'), shape=LIDAR_SHAPE, dtype=np.float64
     ),
-    'FRONT_FACING_CAMERA': spaces.Box(
-        low=0, high=255, shape=CAMERA_SHAPE, dtype=np.uint8
-    ),
     'STEREO_CAMERAS': spaces.Box(
-        low=0, high=255, shape=STEREO_SHAPE, dtype=np.uint8
+        low=0, high=255, shape=STEREO_CAMERA_SHAPE, dtype=np.uint8
+    ),
+    'FRONT_FACING_CAMERA': spaces.Box(
+        low=0, high=255, shape=FRONT_FACING_CAMERA_SHAPE, dtype=np.uint8
     ),
     # TODO: Look into implementing these!
     'SECTOR_LIDAR': None,

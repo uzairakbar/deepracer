@@ -64,7 +64,7 @@ class DeepracerGymAdapter:
         # channel first convention
         observation = {
             sensor: (
-                measurement.transpose(-1, 0, 1) if sensor=='STEREO_CAMERAS'
+                measurement.transpose(-1, 0, 1) if 'CAMERA' in sensor
                 else measurement
             ) for sensor, measurement in observation.items()
         }

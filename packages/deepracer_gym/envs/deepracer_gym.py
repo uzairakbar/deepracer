@@ -13,7 +13,8 @@ HOST: str='127.0.0.1'
 
 class DeepracerGymEnv(gym.Env):
     metadata = {
-        'render_modes': ['rgb_array', 'human']
+        'render_modes': ['rgb_array', 'human'],
+        'render_fps': 30
     }
     def __init__(
             self, port: str=PORT, render_mode='rgb_array', **kwargs
@@ -60,6 +61,9 @@ class DeepracerGymEnv(gym.Env):
             measurement = np.stack(
                 3 * (measurement,), axis=-1
             )
+        elif channels == 3:
+            # front facing camera
+            measurement = measurement.transpose(1, 2, 0)
         
         if mode == 'human':
             plt.imshow(np.asarray(measurement))
