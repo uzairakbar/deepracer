@@ -1,7 +1,5 @@
-import json
 import numpy as np
 import gymnasium as gym
-from gymnasium import spaces
 import matplotlib.pyplot as plt
 from deepracer_gym.envs.utils import (
     make_action_space, make_observation_space
@@ -39,7 +37,7 @@ class DeepracerGymEnv(gym.Env):
         observation, _, _, _, _ = self.deepracer_gym_adapter._parse_response(
             self.deepracer_gym_adapter.response
         )
-        stereo = observation["STEREO_CAMERAS"]
+        stereo = observation['STEREO_CAMERAS']
         stereo = np.hstack((stereo[:, :, 0], stereo[:, :, 1]))
 
         im = np.stack(

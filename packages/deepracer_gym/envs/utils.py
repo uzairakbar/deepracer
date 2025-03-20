@@ -3,14 +3,14 @@ import numpy as np
 from gymnasium import spaces
 
 
-LIDAR_SHAPE: tuple[int, ...]=(64, 1)
+LIDAR_SHAPE: tuple[int, ...]=(64,)
 STEREO_SHAPE: tuple[int, ...]=(120, 160, 2)
 SENSOR_SPACE: dict[str, spaces.Box]={
     'STEREO_CAMERAS': spaces.Box(
                 low=0, high=255, shape=STEREO_SHAPE, dtype=np.uint8
     ),
     'LIDAR': spaces.Box(
-        low=0.15, high=2, shape=LIDAR_SHAPE, dtype=np.float32
+        low=0.15, high=float('inf'), shape=LIDAR_SHAPE, dtype=np.float64
     ),
     # TODO: Look into implementing these!
     'FRONT_FACING_CAMERA': None,
