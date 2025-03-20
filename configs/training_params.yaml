@@ -1,4 +1,4 @@
-WORLD_NAME:                           "reInvent2019_track"
+WORLD_NAME:                           "reinvent_base"
 TARGET_REWARD_SCORE:                  "None"
 NUMBER_OF_EPISODES:                   "0"
 CHANGE_START_POSITION:                "true"
