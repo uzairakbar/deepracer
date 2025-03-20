@@ -54,7 +54,11 @@ def make_observation_space(config_path: str='configs/model_metadata.json'):
     sensors: list[str]=config['sensor']
     
     for sensor in sensors:
-        assert sensor in SENSOR_SPACE, f'Sensor {sensor} not supported!'
+        assert (
+            (sensor in SENSOR_SPACE) 
+            and 
+            (SENSOR_SPACE[sensor] is not None)
+        ), f'Sensor {sensor} not supported!'
 
     return spaces.Dict({
         sensor: SENSOR_SPACE[sensor] for sensor in sensors
