@@ -4,7 +4,7 @@ echo 'Use this script to launch a SageMaker training job.'
 
 RANDOM_STR="$RANDOM-$(date +%s)"
 WORLD_NAME=$(
-    cat /configs/training_params.yaml \
+    cat /configs/environment_params.yaml \
     | yq .WORLD_NAME
 )
 
@@ -38,7 +38,7 @@ MODEL_METADATA_S3_KEY=${S3_PREFIX}/model/model_metadata.json
 REWARD_FUNCTION_S3_SOURCE=/${S3_BUCKET}/${REWARD_FUNCTION_S3_KEY}
 MODEL_METADATA_S3_SOURCE=/${S3_BUCKET}/${MODEL_METADATA_S3_KEY}
 
-cp /configs/model_metadata.json ${MODEL_METADATA_S3_SOURCE}
+cp /configs/agent_params.json ${MODEL_METADATA_S3_SOURCE}
 echo "Uploaded model_metadata to ${MODEL_METADATA_S3_SOURCE}"
 cp /configs/reward_function.py ${REWARD_FUNCTION_S3_SOURCE}
 echo "Uploaded reward function to ${REWARD_FUNCTION_S3_SOURCE}"
@@ -97,7 +97,7 @@ echo "BODY_SHELL_TYPE:                      \"deepracer\"" | tee -a ${DEFAULT_YA
 NUM_WORKERS=1
 echo "NUM_WORKERS:                          \"${NUM_WORKERS}\"" | tee -a ${DEFAULT_YAML}
 
-SOURCE_YAML="/configs/training_params.yaml"
+SOURCE_YAML="/configs/environment_params.yaml"
 S3_YAML_NAME="training_params.yaml"
 yq eval-all 'select(fileIndex == 0) * select(fileIndex == 1)' ${DEFAULT_YAML} ${SOURCE_YAML} | tee ${S3_YAML_NAME}
 
