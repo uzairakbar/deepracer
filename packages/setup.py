@@ -27,7 +27,7 @@ setup(
         'numpy',
         'matplotlib',
         'gymnasium',
-        'zmq',
+        'pyzmq',
         'msgpack',
         'msgpack_numpy'
     ],
