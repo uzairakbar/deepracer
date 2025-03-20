@@ -1,5 +1,5 @@
 #!/bin/bash
-set -x
+set -e
 export container=deepracer
 docker rm "$container"
 
