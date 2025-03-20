@@ -17,14 +17,15 @@ class DeepracerGymEnv(gym.Env):
         'render_fps': 30
     }
     def __init__(
-            self, port: str=PORT, render_mode='rgb_array', **kwargs
+            self, port: str=PORT, **kwargs
         ):
-        self.action_space = make_action_space()
-        self.observation_space = make_observation_space()
+        super().__init__(**kwargs)
+        self.action_space, self._action_metadata = make_action_space()
+        self.observation_space, self._observation_metadata = make_observation_space()
         self.deepracer_gym_adapter = DeepracerGymAdapter(port=port)
-        self.render_mode = render_mode
-
+    
     def reset(self, **kwargs):
+        super().reset(**kwargs)
         observation, info = self.deepracer_gym_adapter.env_reset()
         return observation, info
     

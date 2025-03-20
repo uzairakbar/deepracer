@@ -26,27 +26,29 @@ SENSOR_SPACE: dict[str, spaces.Box]={
 def make_action_space(config_path: str='configs/model_metadata.json'):
     with open(config_path, 'r') as file:
         config = json.load(file)
-    action_space: list[dict[str, float]]=config['action_space']
+    _action_space: list[dict[str, float]]=config['action_space']
     if 'action_space_type' in config:
         if config['action_space_type'] == 'discrete':
-            return spaces.Discrete(
-                len(action_space)
+            action_space = spaces.Discrete(
+                len(_action_space)
             )
         elif config['action_space_type'] == 'continuous':
             raise NotImplementedError
         else:
             raise NotImplementedError
     else:
-        if isinstance(action_space, list):
+        if isinstance(_action_space, list):
             # assuming discrete
-            return spaces.Discrete(
-                len(action_space)
+            action_space = spaces.Discrete(
+                len(_action_space)
             )
-        elif isinstance(action_space, dict):
+        elif isinstance(_action_space, dict):
             # assuming continuous
             raise NotImplementedError
         else:
             raise NotImplementedError
+    
+    return action_space, _action_space
 
 
 def make_observation_space(config_path: str='configs/model_metadata.json'):
@@ -63,7 +65,7 @@ def make_observation_space(config_path: str='configs/model_metadata.json'):
 
     return spaces.Dict({
         sensor: SENSOR_SPACE[sensor] for sensor in sensors
-    })
+    }), sensors
 
 
 def num_channels(measurement: np.array):
