@@ -41,6 +41,8 @@ docker pull "$base"
 export image=deepracer
 docker build -t "$image" .
 
+docker system prune --force
+
 export container=deepracer
 docker run -it --rm \
     --name="$container" \
