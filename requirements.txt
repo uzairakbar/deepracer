@@ -3,6 +3,7 @@
 numpy==2.2.4
 matplotlib==3.10.1
 torch
+loguru==0.7.3
 standard-imghdr==3.13.0
 tensorboard>=2.4.1
 munch==4.0.0
