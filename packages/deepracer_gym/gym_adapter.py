@@ -35,7 +35,7 @@ class DeepracerGymAdapter:
         else:
             # If prev_episode done and reset called, fast forward one step for new episode
             # Action ignored due to reset()
-            self.response = self._send_action_get_response(DUMMY_ACTION)
+            self.response = self._send_action(DUMMY_ACTION)
         
         if not isinstance(self.response['info'], dict):
             self.response['info'] = dict()
