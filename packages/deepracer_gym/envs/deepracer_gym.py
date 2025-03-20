@@ -37,14 +37,32 @@ class DeepracerGymEnv(gym.Env):
         observation, _, _, _, _ = self.deepracer_gym_adapter._parse_response(
             self.deepracer_gym_adapter.response
         )
-        stereo = observation['STEREO_CAMERAS']
-        stereo = np.hstack((stereo[:, :, 0], stereo[:, :, 1]))
-
-        im = np.stack(
-            3 * (stereo,), axis=-1
-        )
+        measurement = None
+        for sensor in observation:
+            if 'CAMERA' in sensor:
+                measurement = observation[sensor]
+        
+        if measurement is None:
+            raise ValueError(
+                f'Cannot render output of sensors {list(observation.keys())}.'
+            )
+        
+        channels, _, _ = measurement.shape
+        if channels == 2:
+            # stereo camera
+            measurement = np.hstack((
+                measurement[0, :, :], measurement[1, :, :]
+            ))
+        
+        channels, _, _ = measurement.shape
+        if channels == 1:
+            # greyscale image
+            measurement = np.stack(
+                3 * (measurement,), axis=-1
+            )
+        
         if mode == 'human':
-            plt.imshow(np.asarray(im))
+            plt.imshow(np.asarray(measurement))
             plt.axis('off')
         elif mode == 'rgb_array':
-            return np.asarray(im)
+            return np.asarray(measurement)

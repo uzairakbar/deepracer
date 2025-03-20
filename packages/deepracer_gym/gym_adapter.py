@@ -1,9 +1,5 @@
 import zmq
-import time
-import msgpack
-
-import msgpack_numpy as m
-m.patch()
+import numpy as np
 
 from deepracer_gym.zmq_client import DeepracerClientZMQ
 from deepracer_gym.utils import (
@@ -65,4 +61,11 @@ class DeepracerGymAdapter:
         
         reward = response['_reward']
         observation = response['_next_state']
+        # channel first convention
+        observation = {
+            sensor: (
+                measurement.transpose(-1, 0, 1) if sensor=='STEREO_CAMERAS'
+                else measurement
+            ) for sensor, measurement in observation.items()
+        }
         return observation, reward, terminated, truncated, info
