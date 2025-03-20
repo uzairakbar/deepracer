@@ -10,4 +10,6 @@ docker image rm -f "$base"
 
 docker system prune --force
 
-conda remove --name deepracer --all
+export conda_env=deepracer
+conda activate base
+conda remove --name "$conda_env" --all --yes
