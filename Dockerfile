@@ -35,6 +35,10 @@ RUN file_path='/opt/amazon/install/sagemaker_rl_agent/lib/python3.6/site-package
     replace="agent.observe(response(agent, self.environment, env_response))" && \
     sed -i -e "s|$pattern|$replace|g" "$file_path"
 
+# patch gym agent
+RUN mv -f /patches/gym_agent.py \
+    /opt/amazon/install/sagemaker_rl_agent/lib/python3.6/site-packages/markov/
+
 # use customized launch script
 RUN mv -f /patches/launch-simapp-rosnodes.sh /opt/ml/code/
 RUN chmod +x /opt/ml/code/launch-simapp-rosnodes.sh
