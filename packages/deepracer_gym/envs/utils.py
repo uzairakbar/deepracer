@@ -21,9 +21,10 @@ SENSOR_SPACE: dict[str, spaces.Box]={
     'SECTOR_LIDAR': None,
     'LEFT_CAMERA': None
 }
+AGENT_PARAMS_PATH: str='configs/agent_params.json'
 
 
-def make_action_space(config_path: str='configs/model_metadata.json'):
+def make_action_space(config_path: str=AGENT_PARAMS_PATH):
     with open(config_path, 'r') as file:
         config = json.load(file)
     _action_space: list[dict[str, float]]=config['action_space']
@@ -51,7 +52,7 @@ def make_action_space(config_path: str='configs/model_metadata.json'):
     return action_space, _action_space
 
 
-def make_observation_space(config_path: str='configs/model_metadata.json'):
+def make_observation_space(config_path: str=AGENT_PARAMS_PATH):
     with open(config_path, 'r') as file:
         config = json.load(file)
     sensors: list[str]=config['sensor']
