@@ -29,7 +29,8 @@ setup(
         'gymnasium',
         'pyzmq',
         'msgpack',
-        'msgpack_numpy'
+        'msgpack_numpy',
+        'loguru'
     ],
     packages=find_packages(),
     classifiers=[

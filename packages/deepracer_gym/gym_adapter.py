@@ -1,5 +1,6 @@
 import zmq
 import numpy as np
+from typing import TypeAlias
 
 from deepracer_gym.zmq_client import DeepracerClientZMQ
 from deepracer_gym.utils import (
@@ -11,17 +12,30 @@ PORT: int=8888
 HOST: str='127.0.0.1'
 TIMEOUT_LONG: int=600_000   # 10m
 TIMEOUT_SHORT: int=20_000   # 20s
-DUMMY_ACTION: int=0
-
+DUMMY_ACTION_DISCRETE: int=0
+DUMMY_ACTION_CONTINUOUS: list[float]=[0.0, 0.0]
+ActionType: TypeAlias=(int | np.ndarray | list[float])
 
 class DeepracerGymAdapter:
-    def __init__(self, host: str=HOST, port: int=PORT):
+    def __init__(
+            self,
+            action_space_type: str,
+            host: str=HOST,
+            port: int=PORT):
+        if action_space_type == 'discrete':
+            self.dummy_action = DUMMY_ACTION_DISCRETE
+        elif action_space_type == 'continuous':
+            self.dummy_action = DUMMY_ACTION_CONTINUOUS
+        else:
+            raise ValueError(
+                f'Action space can only be discrete or continuous. Got {action_space_type} instead.'
+            )
         self.zmq_client = DeepracerClientZMQ(host=host, port=port)
         self.zmq_client.ready()
         self.response = None
 
-    def _send_action(self, action: int):
-        action: dict[str, int] = {'action': action}
+    def _send_action(self, action: ActionType):
+        action: dict[str, ActionType] = {'action': action}
         self.response = self.zmq_client.send_message(action)
         return self.response
     
@@ -35,7 +49,7 @@ class DeepracerGymAdapter:
         else:
             # If prev_episode done and reset called, fast forward one step for new episode
             # Action ignored due to reset()
-            self.response = self._send_action(DUMMY_ACTION)
+            self.response = self._send_action(self.dummy_action)
         
         if not isinstance(self.response['info'], dict):
             self.response['info'] = dict()
@@ -43,8 +57,8 @@ class DeepracerGymAdapter:
         observation, _, _, _, info = self._parse_response(self.response)
         return observation, info
     
-    def send_action(self, action: int):
-        action: dict[str, int] = {'action': action}
+    def send_action(self, action: ActionType):
+        action: dict[str, ActionType] = {'action': action}
         self.response = self.zmq_client.send_message(action)
         return self._parse_response(self.response)
     
