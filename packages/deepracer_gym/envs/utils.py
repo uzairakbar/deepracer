@@ -1,5 +1,6 @@
 import json
 import numpy as np
+from loguru import logger
 from gymnasium import spaces
 
 
@@ -24,32 +25,113 @@ SENSOR_SPACE: dict[str, spaces.Box]={
 AGENT_PARAMS_PATH: str='configs/agent_params.json'
 
 
+def validate_action_space_config(config: dict, action_space_type: str):
+    # make sure action_space defined correctly
+    if action_space_type == 'discrete':
+        assert isinstance(config['action_space'], list), \
+                f'action_space_type is discrete but action_space is not a list.'
+        
+        for action in config['action_space']:
+            assert isinstance(action, dict), \
+                f'All actions should be defined as dictionaries in action_space.'
+
+            assert all(
+                (
+                    key in action
+                    and
+                    isinstance(action[key], (int, float))
+                ) for key in ('steering_angle', 'speed')
+            ), f'steering_angle or speed incorrectly defined for action in action_space.'
+    elif action_space_type == 'continuous':
+        assert isinstance(config['action_space'], dict), \
+                f'action_space_type is continuous but action_space is not a dictionary.'
+        
+        assert all(
+            (
+                key in config['action_space']
+                and
+                isinstance(config['action_space'][key], dict)
+            ) for key in ('steering_angle', 'speed')
+        ), f'steering_angle or speed incorrectly defined for action in action_space.'
+        
+        for action, bounds in config['action_space'].items():
+            assert all(
+                (
+                    key in bounds
+                    and
+                    isinstance(bounds[key], (int, float))
+                ) for key in ('low', 'high')
+            ), f'Bounds incorrectly defined for {action} in action_space.'
+
+            assert bounds['low'] < bounds['high'], \
+                f'Lower bound should be lower than upper bound for {action} in action_space.'
+    else:
+        raise ValueError(
+            f'action_space_type can only be continuous or discrete.'
+        )
+    
+    return True
+
+
+def action_space_type(config: dict):    
+    if 'action_space_type' in config:
+        if config['action_space_type'] not in ('discrete', 'continuous'):
+            raise ValueError(
+                f'Incorrectly defined action_space_type in config file.'
+            )
+        space_type = config['action_space_type']
+    else:
+        if isinstance(config['action_space'], list):
+            # assuming discrete
+            space_type = 'discrete'
+        elif isinstance(config['action_space'], dict):
+            # assuming continuous
+            space_type = 'continuous'
+        else:
+            raise ValueError(
+                f'Incorrectly defined action_space in config file.'
+            )
+    return space_type
+
+
 def make_action_space(config_path: str=AGENT_PARAMS_PATH):
     with open(config_path, 'r') as file:
         config = json.load(file)
-    _action_space: list[dict[str, float]]=config['action_space']
-    if 'action_space_type' in config:
-        if config['action_space_type'] == 'discrete':
-            action_space = spaces.Discrete(
-                len(_action_space)
-            )
-        elif config['action_space_type'] == 'continuous':
-            raise NotImplementedError
-        else:
-            raise NotImplementedError
-    else:
-        if isinstance(_action_space, list):
-            # assuming discrete
-            action_space = spaces.Discrete(
-                len(_action_space)
-            )
-        elif isinstance(_action_space, dict):
-            # assuming continuous
-            raise NotImplementedError
-        else:
-            raise NotImplementedError
     
-    return action_space, _action_space
+    assert 'action_space' in config, \
+        f'Action space not defined in config file {config_path}.'
+    
+    try:
+        space_type = action_space_type(config)
+    except Exception as e:
+        logger.error(
+            f'Incorrectly defined action_space in config file {config_path}.'
+        )
+        raise e
+    
+    assert validate_action_space_config(config, space_type)
+
+    if space_type == 'discrete':
+        size = len(config['action_space'])
+        action_space = spaces.Discrete(
+            size
+        )
+    elif space_type == 'continuous':
+        low = np.array([
+            bounds['low'] for action, bounds in config['action_space'].items()
+        ])
+        high = np.array([
+            bounds['high'] for action, bounds in config['action_space'].items()
+        ])
+        action_space = spaces.Box(
+            low=low, high=high, shape=(2,), dtype=np.float64
+        )
+    else:
+        raise ValueError(
+            f'Space type can only be discrete or continuous for actions. Got {space_type} instead.'
+        )
+    
+    return action_space, config['action_space']
 
 
 def make_observation_space(config_path: str=AGENT_PARAMS_PATH):
@@ -69,7 +151,7 @@ def make_observation_space(config_path: str=AGENT_PARAMS_PATH):
     }), sensors
 
 
-def num_channels(measurement: np.array):
+def num_channels(measurement: np.ndarray):
     dimensions = len(measurement.shape)
     if dimensions == 2:
         channels = 1

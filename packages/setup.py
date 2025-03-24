@@ -29,7 +29,8 @@ setup(
         'gymnasium',
         'pyzmq',
         'msgpack',
-        'msgpack_numpy'
+        'msgpack_numpy',
+        'loguru'
     ],
     packages=find_packages(),
     classifiers=[
@@ -37,5 +38,5 @@ setup(
         'License :: OSI Approved :: MIT License',
         'Operating System :: OS Independent',
     ],
-    python_requires='>=3.12',
+    python_requires='>=3.10',
 )

@@ -1,5 +1,4 @@
 import zmq
-import time
 import msgpack
 
 import msgpack_numpy as m
@@ -33,11 +32,11 @@ class DeepracerClientZMQ:
         response = msgpack.unpackb(packed_response)
         return response
 
-    def send_message(self, message: dict[str, int]):
+    def send_message(self, message: dict[str, object]):
         self._send_message(message)
         response = self.recieve_response()
         return response
     
-    def _send_message(self, message: dict[str, int]):
+    def _send_message(self, message: dict[str, object]):
         packed_message = msgpack.packb(message)
         self.socket.send(packed_message)

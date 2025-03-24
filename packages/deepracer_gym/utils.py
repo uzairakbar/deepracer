@@ -1,5 +1,4 @@
 from enum import Enum
-from loguru import logger
 
 
 class RewardParam(Enum):
@@ -37,7 +36,7 @@ class RewardParam(Enum):
 
 
 def terminated_check(reward_params: dict, game_over: bool):
-    if (
+    if game_over and (
         reward_params['progress'] >= 100
         or
         reward_params['is_crashed']
@@ -46,19 +45,12 @@ def terminated_check(reward_params: dict, game_over: bool):
         or
         reward_params['is_offtrack']
     ):
-        logger.warning(
-            f'Game over flag not triggered but race complete/crashed/reversed/offtrack.'
-        )
         return True
     return False
 
 
 def truncated_check(reward_params: dict, game_over: bool):
     terminated = terminated_check(reward_params, game_over)
-    if (terminated and not game_over):
-        # likely because of async I/O
-        # just truncate the episode
-        return True
-    else:
-        # time_out or immobilized
-        return (game_over and not terminated)
+    # time_out or immobilized
+    truncated = (game_over and not terminated)
+    return truncated
