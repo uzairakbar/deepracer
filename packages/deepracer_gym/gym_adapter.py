@@ -55,10 +55,9 @@ class DeepracerGymAdapter:
             info = dict()
         info['goal'] = response['_goal']
 
-        # game_over = response['_game_over']
-        # terminated = terminated_check(info['reward_params'], game_over)
-        # truncated = truncated_check(info['reward_params'], game_over)
-        terminated, truncated = response['_game_over'], False
+        game_over = response['_game_over']
+        terminated = terminated_check(info['reward_params'], game_over)
+        truncated = truncated_check(info['reward_params'], game_over)
         
         reward = response['_reward']
         observation = response['_next_state']
