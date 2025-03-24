@@ -10,7 +10,8 @@ RUN mkdir -p /logs/deepracer
 COPY ./configs/* /configs
 COPY ./patches/* /patches
 
-# install yq
+# install jq and yq
+RUN sudo apt-get install jq --yes
 RUN wget https://github.com/mikefarah/yq/releases/latest/download/yq_linux_amd64 -O /usr/bin/yq &&\
     chmod +x /usr/bin/yq
 
@@ -33,6 +34,12 @@ RUN file_path='/opt/amazon/install/sagemaker_rl_agent/lib/python3.6/site-package
 RUN file_path='/opt/amazon/install/sagemaker_rl_agent/lib/python3.6/site-packages/markov/multi_agent_coach/multi_agent_level_manager.py' && \
     pattern="agent.observe(env_response)" && \
     replace="agent.observe(response(agent, self.environment, env_response))" && \
+    sed -i -e "s|$pattern|$replace|g" "$file_path"
+
+# handle continuous action spaces
+RUN file_path='/opt/amazon/install/sagemaker_rl_agent/lib/python3.6/site-packages/markov/rollout_worker.py' && \
+    pattern='ConfigParams.NUMBER_OF_TRIALS.value: None' && \
+    replace='ConfigParams.NUMBER_OF_TRIALS.value: None if rospy.get_param("IS_CONTINUOUS", None) is None else 1' && \
     sed -i -e "s|$pattern|$replace|g" "$file_path"
 
 # patch gym agent

@@ -1,4 +1,5 @@
 import zmq
+import json
 import msgpack
 import msgpack_numpy as m
 from rl_coach.core_types import ActionInfo
@@ -6,7 +7,31 @@ from rl_coach.agents.clipped_ppo_agent import ClippedPPOAgent
 
 
 m.patch()
-DUMMY_ACTION: int=0
+
+AGENT_PARAMS_PATH = '/configs/agent_params.json'
+DUMMY_ACTION_DISCRETE=0
+DUMMY_ACTION_CONTINUOUS=[0.0, 0.0]
+
+
+def action_space_type(config):    
+    if 'action_space_type' in config:
+        if config['action_space_type'] not in ('discrete', 'continuous'):
+            raise ValueError(
+                f'Incorrectly defined action_space_type in config file.'
+            )
+        space_type = config['action_space_type']
+    else:
+        if isinstance(config['action_space'], list):
+            # assuming discrete
+            space_type = 'discrete'
+        elif isinstance(config['action_space'], dict):
+            # assuming continuous
+            space_type = 'continuous'
+        else:
+            raise ValueError(
+                f'Incorrectly defined action_space in config file.'
+            )
+    return space_type
 
 
 class Server:
@@ -37,6 +62,23 @@ class Server:
 class GymAgent(ClippedPPOAgent):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+
+        with open(AGENT_PARAMS_PATH, 'r') as file:
+            config = json.load(file)
+        
+        assert 'action_space' in config, \
+            f'Action space not defined in config file {AGENT_PARAMS_PATH}.'
+        
+        action_space = action_space_type(config)
+        if action_space == 'discrete':
+            self.dummy_action = DUMMY_ACTION_DISCRETE
+        elif action_space == 'continuous':
+            self.dummy_action = DUMMY_ACTION_CONTINUOUS
+        else:
+            raise ValueError(
+                f'Action space can only be continuous or discrete. Got {action_space} instead.'
+            )
+
         self.server = Server()
         self._previous_done = False
         self._hard_reset = False
@@ -60,7 +102,10 @@ class GymAgent(ClippedPPOAgent):
             self._recieved_message = {}
             if self._previous_done:
                 self._hard_reset = False
-                self._recieved_message['action'] = DUMMY_ACTION  # IGNORED DUE TO RESET
+                self._recieved_message['action'] = self.dummy_action  # IGNORED DUE TO RESET
+            else:
+                env_response.game_over = True
+                return True
     
     def act(self):
         if not self._hard_reset:
@@ -70,8 +115,8 @@ class GymAgent(ClippedPPOAgent):
 
             elif (self._recieved_message.get('ready') is not None):
                 self._hard_reset = True
-                action = DUMMY_ACTION
+                action = self.dummy_action
 
         else:
-            action = DUMMY_ACTION
+            action = self.dummy_action
         return ActionInfo(action=action)

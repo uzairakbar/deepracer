@@ -1,5 +1,4 @@
 from enum import Enum
-from loguru import logger
 
 
 class RewardParam(Enum):
