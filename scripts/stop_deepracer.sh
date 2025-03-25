@@ -17,7 +17,6 @@ if command_exists docker; then
 
     echo "Stopped deepracer Docker container."
     
-    exit 0
 fi
 
 # check for Apptainer
@@ -28,9 +27,7 @@ if command_exists apptainer; then
 
     echo "Stopped deepracer Apptainer container."
 
-    exit 0
 fi
 
 # if neither Docker nor Apptainer is found
 echo "Neither Docker nor Apptainer is installed"
-exit 1

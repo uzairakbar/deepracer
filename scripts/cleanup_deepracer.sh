@@ -25,8 +25,7 @@ if command_exists docker; then
     docker system prune --force
 
     echo "Cleaned deepracer Docker environment."
-    
-    exit 0
+
 fi
 
 # check for Apptainer
@@ -36,7 +35,6 @@ if command_exists apptainer; then
 
     echo "Cleaned deepracer Apptainer environment."
 
-    exit 0
 fi
 
 # check for Conda
@@ -47,7 +45,6 @@ if command_exists conda; then
 
     echo "Cleaned deepracer Conda environment."
 
-    exit 0
 fi
 
 # no environment found to clean
