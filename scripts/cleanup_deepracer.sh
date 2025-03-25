@@ -32,6 +32,8 @@ fi
 if command_exists apptainer; then
 
     rm -f "$image".sif
+    overlay=/tmp/"$container"_overlay
+    rm -rf "$overlay"
 
     echo "Cleaned deepracer Apptainer environment."
 
