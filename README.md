@@ -1,21 +1,22 @@
-# Project 4 - CS 7642, Spring '25
+# Project 4, Spring '25 - DeepRacer
 
-## Setup
+## Setup \& Dependencies
 - Docker.
 - Conda (or Python 3.10 or higher).
 - Linux or Windows machine with an Intel CPU.
+
 Please see the detailed setup instructions in [`SETUP.md`](https://github.gatech.edu/rldm/P4_deepracer/blob/main/SETUP.md).
 
-### Launch DeepRacer
-Start the simulator container with the following command.
+## Usage
+
+Launch the DeepRacer simulation.
 ```bash
 source scripts/start_deepracer.sh \
     [-C=MAX_CPU; default="3"] \
     [-M=MAX_MEMORY; default="6g"]
 ```
-Similarly, use `scripts/stop_deepracer.sh` and `scripts/cleanup_deepracer.sh` to stop the simulaiton container and clean setup artifacts (when finished with the project).
 
-## Usage
+Interact with the environment via `gymnasium`.
 ```python
 import gymnasium as gym
 import deepracer_gym
