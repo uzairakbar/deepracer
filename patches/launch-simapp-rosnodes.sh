@@ -46,6 +46,7 @@ echo "Uploaded model_metadata to ${MODEL_METADATA_S3_SOURCE}"
 cp /configs/reward_function.py ${REWARD_FUNCTION_S3_SOURCE}
 echo "Uploaded reward function to ${REWARD_FUNCTION_S3_SOURCE}"
 
+export PATH="$HOME/.local/bin:$PATH"
 # handle continuous action spaces
 is_continuous=$(jq '
 # Function to determine if action space is continuous

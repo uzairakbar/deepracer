@@ -24,6 +24,8 @@ if command_exists apptainer; then
 
     apptainer instance stop "$container"
     sleep 3
+    overlay=/tmp/"$container"_overlay
+    rm -rf "$overlay"
 
     echo "Stopped deepracer Apptainer container."
 

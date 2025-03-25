@@ -7,11 +7,13 @@
 Please see the detailed setup instructions in [`SETUP.md`](https://github.gatech.edu/rldm/P4_deepracer/blob/main/SETUP.md).
 
 ### Launch DeepRacer
+Start the simulator container with the following command.
 ```bash
 source scripts/start_deepracer.sh \
     [-C=MAX_CPU; default="3"] \
     [-M=MAX_MEMORY; default="6g"]
 ```
+Similarly, use `scripts/stop_deepracer.sh` and `scripts/cleanup_deepracer.sh` to stop the simulaiton container and clean setup artifacts (when finished with the project).
 
 ## Usage
 ```python
