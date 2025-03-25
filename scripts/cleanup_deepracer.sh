@@ -1,15 +1,54 @@
 #!/bin/bash
-export container=deepracer
-docker rm "$container"
 
-export image=deepracer
-docker image rm -f "$image"
+# check if a command exists
+command_exists() {
+    command -v "$1" >/dev/null 2>&1
+}
 
-export base=uzairakbar/deepracer:v0
-docker image rm -f "$base"
-
-docker system prune --force
 
 export conda_env=deepracer
-conda activate base
-conda remove --name "$conda_env" --all --yes
+
+export base=uzairakbar/deepracer:v0
+export container=deepracer
+export image=deepracer
+
+
+# check for Docker
+if command_exists docker; then
+    
+    docker rm "$container"
+
+    docker image rm -f "$image"
+
+    docker image rm -f "$base"
+
+    docker system prune --force
+
+    echo "Cleaned deepracer Docker environment."
+    
+    exit 0
+fi
+
+# check for Apptainer
+if command_exists apptainer; then
+
+    rm -f "$image".sif
+
+    echo "Cleaned deepracer Apptainer environment."
+
+    exit 0
+fi
+
+# check for Conda
+if command_exists conda; then
+
+    conda activate base
+    conda remove --name "$conda_env" --all --yes
+
+    echo "Cleaned deepracer Conda environment."
+
+    exit 0
+fi
+
+# no environment found to clean
+echo "Nothing to clean!"
