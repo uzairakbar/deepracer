@@ -6,8 +6,7 @@ RUN mkdir -p /patches
 RUN mkdir -p /configs
 RUN mkdir -p /logs/deepracer
 
-# copy over required files
-COPY ./configs/* /configs
+# copy over patch files
 COPY ./patches/* /patches
 
 # install jq and yq
@@ -42,6 +41,12 @@ RUN file_path='/opt/amazon/install/sagemaker_rl_agent/lib/python3.6/site-package
     replace='ConfigParams.NUMBER_OF_TRIALS.value: None if rospy.get_param("IS_CONTINUOUS", None) is None else 1' && \
     sed -i -e "s|$pattern|$replace|g" "$file_path"
 
+# turn off kinesis video stream
+RUN file_path='/opt/amazon/install/deepracer_simulation_environment/share/deepracer_simulation_environment/launch/rollout_rl_agent.launch' && \
+    pattern='name="publish_to_kinesis_stream" default="true"' && \
+    replace='name="publish_to_kinesis_stream" default="false"' && \
+    sed -i -e "s|$pattern|$replace|g" "$file_path"
+
 # patch gym agent
 RUN mv -f /patches/gym_agent.py \
     /opt/amazon/install/sagemaker_rl_agent/lib/python3.6/site-packages/markov/
@@ -49,6 +54,9 @@ RUN mv -f /patches/gym_agent.py \
 # use customized launch script
 RUN mv -f /patches/launch-simapp-rosnodes.sh /opt/ml/code/
 RUN chmod +x /opt/ml/code/launch-simapp-rosnodes.sh
+
+# copy over config files
+COPY ./configs/* /configs
 
 # set working directory
 WORKDIR /opt/ml/code/
