@@ -52,7 +52,7 @@ if command_exists docker; then
 
     docker system prune --force
 
-    docker run -it --rm \
+    docker run --rm --detach \
         --name="$container" \
         -v "$PWD"/"$logs":/"$logs" \
         -p 8888:8888 -p 5000:5000 \
