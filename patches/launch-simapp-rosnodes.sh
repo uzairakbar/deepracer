@@ -178,9 +178,9 @@ export PATH="/opt/ml/:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/b
 if which x11vnc &>/dev/null; then
     source /opt/ros/$ROS_DISTRO/setup.bash
     source /opt/amazon/install/setup.bash
-    export DISPLAY=:0 # Select screen 0 by default.
     export GAZEBO_MODEL_PATH='/opt/amazon/install/deepracer_simulation_environment/share/deepracer_simulation_environment'
-    xvfb-run -f $XAUTHORITY -l -n 0 -s ":0 -screen 0 1400x900x24" jwm &
+    Xvfb :99 -ac -screen 0 1400x900x24 &
+    export DISPLAY=:99  # Select screen 99 by default.
     echo "Running simulation job on single sagemaker instance..."
     echo "Check ${SIMULATION_LOG_GROUP} and ${TRAINING_LOG_GROUP} for training and simulation logs."
     # redirect stderr to stdout and have error messages sent to the same file as standard output
