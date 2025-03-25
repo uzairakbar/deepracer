@@ -11,14 +11,24 @@
 pip install ./
 ```
 
-### Launch DeepRacer
+## Usage
+### Launch the simulation
+From the root of this repository, start the simulator container with the following command.
 ```bash
 source scripts/start_deepracer.sh \
     [-C=MAX_CPU; default="3"] \
     [-M=MAX_MEMORY; default="6g"]
 ```
+Similarly, use `scripts/stop_deepracer.sh` and `scripts/cleanup_deepracer.sh` to stop the simulaiton container and clean setup artifacts (when finished with the project).
 
-## Usage
+To check if the container is rumming you can use the following commands.
+```bash
+docker ps -a            # if using Docker (local setup)
+apptainer instance list # if using Apptainer (PACE ICE)
+```
+Note that the simulator is initialized by the config files in the `configs/` directory. To change the simulation settings, you have to stop the container, and start it back up after changing the files in `configs/` accordingly.
+
+### Interact with the environment
 ```python
 import gymnasium as gym
 import deepracer_gym
@@ -26,7 +36,9 @@ import deepracer_gym
 env = gym.make(
     'deepracer-v0'
 )
+
 observation, info = env.reset()
+
 observation, reward, terminated, truncated, info = env.step(
     env.action_space.sample()
 )
@@ -49,6 +61,8 @@ The `truncated` flag is trigerred by the following (not accessible in `info['rew
 ```
 
 [^1]: However, the relationship may not straightforward. For example, even if `is_crashed` is `True`, the `terminated` flag might not get trigerred if the collision object is moving faster than our racer such that an actual collision will not happen.
+
+For more details, see the [`gymnasium` API section](#gymnasium-API) below.
 
 ## Configuration
 ### Reward function
@@ -175,3 +189,7 @@ The following tracks can be selected by setting the `WORLD_NAME` parameter. You 
 "Virtual_May19_Train_track"
 "Vegas_track"
 ```
+
+## `gymnasium` API
+
+t.b.d.
