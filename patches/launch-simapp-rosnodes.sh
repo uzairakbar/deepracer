@@ -30,9 +30,9 @@ done
 echo "Job name: ${SM_JOBNAME}."
 
 # mkdir does not work with nested directories in apptainer for some reason
-mkdir -p /${S3_BUCKET}
-mkdir -p /${S3_BUCKET}/${S3_PREFIX}
-mkdir -p /${S3_BUCKET}/${S3_PREFIX}/model
+mkdir /${S3_BUCKET}
+mkdir /${S3_BUCKET}/${S3_PREFIX}
+mkdir /${S3_BUCKET}/${S3_PREFIX}/model
 
 # Upload the reward function & model metadata
 REWARD_FUNCTION_S3_KEY=${S3_PREFIX}/custom_reward_function.py
