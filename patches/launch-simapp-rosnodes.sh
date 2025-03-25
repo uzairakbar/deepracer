@@ -29,7 +29,10 @@ done
 
 echo "Job name: ${SM_JOBNAME}."
 
-mkdir -p /${S3_BUCKET}/${S3_PREFIX}/model/
+# mkdir does not work with nested directories in apptainer for some reason
+mkdir /${S3_BUCKET}
+mkdir /${S3_BUCKET}/${S3_PREFIX}
+mkdir /${S3_BUCKET}/${S3_PREFIX}/model
 
 # Upload the reward function & model metadata
 REWARD_FUNCTION_S3_KEY=${S3_PREFIX}/custom_reward_function.py
@@ -76,9 +79,6 @@ def is_action_space_continuous:
 is_action_space_continuous
 ' "${MODEL_METADATA_S3_SOURCE}")
 
-# Create the Kinesis video stream
-KVS_NAME="dr-${SM_JOBNAME}"
-
 # generate local yaml file and then upload to S3 bucket for robomaker training
 DEFAULT_YAML="default_training_params.yaml"
 touch ${DEFAULT_YAML}
@@ -98,7 +98,6 @@ echo "NUMBER_OF_EPISODES:                   \"0\"" | tee -a ${DEFAULT_YAML}
 echo "JOB_TYPE:                             \"TRAINING\"" | tee -a ${DEFAULT_YAML}
 echo "CHANGE_START_POSITION:                \"true\"" | tee -a ${DEFAULT_YAML}
 echo "ALTERNATE_DRIVING_DIRECTION:          \"false\"" | tee -a ${DEFAULT_YAML}
-echo "KINESIS_VIDEO_STREAM_NAME:            \"${KVS_NAME}\"" | tee -a ${DEFAULT_YAML}
 echo "REWARD_FILE_S3_KEY:                   \"${REWARD_FUNCTION_S3_KEY}\"" | tee -a ${DEFAULT_YAML}
 echo "MODEL_METADATA_FILE_S3_KEY:           \"${MODEL_METADATA_S3_KEY}\"" | tee -a ${DEFAULT_YAML}
 echo "NUMBER_OF_OBSTACLES:                  \"0\"" | tee -a ${DEFAULT_YAML}
@@ -162,7 +161,6 @@ export ROS_IP=${IPS_ADDRESS_LIST[0]}
 
 
 export APP_REGION=${AWS_REGION}
-export KINESIS_VIDEO_STREAM_NAME=${KVS_NAME}
 export MODEL_S3_BUCKET=${S3_BUCKET}
 export MODEL_S3_PREFIX=${S3_PREFIX}
 export S3_YAML_NAME=${S3_YAML_NAME}
@@ -180,9 +178,9 @@ export PATH="/opt/ml/:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/b
 if which x11vnc &>/dev/null; then
     source /opt/ros/$ROS_DISTRO/setup.bash
     source /opt/amazon/install/setup.bash
-    export DISPLAY=:0 # Select screen 0 by default.
-    export GAZEBO_MODEL_PATH=./deepracer_simulation_environment/share/deepracer_simulation_environment
-    xvfb-run -f $XAUTHORITY -l -n 0 -s ":0 -screen 0 1400x900x24" jwm &
+    export GAZEBO_MODEL_PATH='/opt/amazon/install/deepracer_simulation_environment/share/deepracer_simulation_environment'
+    Xvfb :99 -ac -screen 0 1400x900x24 &
+    export DISPLAY=:99  # Select screen 99 by default.
     echo "Running simulation job on single sagemaker instance..."
     echo "Check ${SIMULATION_LOG_GROUP} and ${TRAINING_LOG_GROUP} for training and simulation logs."
     # redirect stderr to stdout and have error messages sent to the same file as standard output
