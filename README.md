@@ -29,7 +29,7 @@ observation, reward, terminated, truncated, info = env.step(
     env.action_space.sample()
 )
 ```
-See the [packages directory](https://github.gatech.edu/rldm/P4_deepracer/tree/main/packages) for details.
+See the [packages directory](https://github.gatech.edu/rldm/P4_deepracer/tree/main/packages) and the [usage.ipynb](https://github.gatech.edu/rldm/P4_deepracer/tree/main/usage.ipynb) notebook for details.
 
 ## Logging
 View training metrics via tensorboard.

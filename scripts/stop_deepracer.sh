@@ -12,24 +12,22 @@ export image=deepracer
 if command_exists docker; then
     
     docker stop "$container"
-    sleep 3
-    docker rmi "$image"
 
     echo "Stopped deepracer Docker container."
     
-fi
-
 # check for Apptainer
-if command_exists apptainer; then
+elif command_exists apptainer; then
 
-    apptainer instance stop "$container"
-    sleep 3
+    apptainer instance stop "$container" || echo "No ${container} instance running."
+
     overlay=/tmp/"$container"_overlay
     rm -rf "$overlay"
 
     echo "Stopped deepracer Apptainer container."
 
-fi
+else
 
-# if neither Docker nor Apptainer is found
-echo "Neither Docker nor Apptainer is installed"
+    # if neither Docker nor Apptainer is found
+    echo "Neither Docker nor Apptainer is installed"
+
+fi
