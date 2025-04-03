@@ -1,6 +1,6 @@
 # Custom files and folders
 /logs
-*.mp4
+*.sif
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

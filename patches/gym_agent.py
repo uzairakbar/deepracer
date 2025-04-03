@@ -103,9 +103,9 @@ class GymAgent(ClippedPPOAgent):
             if self._previous_done:
                 self._hard_reset = False
                 self._recieved_message['action'] = self.dummy_action  # IGNORED DUE TO RESET
-            else:
-                env_response.game_over = True
-                return True
+            # else:
+            #     env_response.game_over = True
+            #     return True
     
     def act(self):
         if not self._hard_reset:

@@ -7,8 +7,8 @@ m.patch()
 
 PORT: int=8888
 HOST: str='127.0.0.1'
-TIMEOUT_LONG: int=600_0000  # 10m
-TIMEOUT_SHORT: int=200_000  # 20s
+TIMEOUT_LONG: int=100_000   # 1.7m
+TIMEOUT_SHORT: int=20_000   # 20s
 
 
 class DeepracerClientZMQ:
@@ -40,3 +40,6 @@ class DeepracerClientZMQ:
     def _send_message(self, message: dict[str, object]):
         packed_message = msgpack.packb(message)
         self.socket.send(packed_message)
+
+    def __del__(self):
+        self.socket.close()

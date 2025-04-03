@@ -3,9 +3,31 @@ set -e
 echo 'Use this script to launch a SageMaker training job.'
 
 RANDOM_STR="$RANDOM-$(date +%s)"
-WORLD_NAME=$(
+
+if [ -z "$EVALUATION" ]; then
+    WORLD_NAME=$(
+        cat /configs/environment_params.yaml \
+        | yq .WORLD_NAME
+    )
+    echo "Running training mode with ${WORLD_NAME} track."
+elif [ "$EVALUATION" = 'true' ]; then
+    WORLD_NAME="$EVAL_WORLD_NAME"
+    echo "Running evaluation mode with ${WORLD_NAME} track."
+else
+    WORLD_NAME=$(
+        cat /configs/environment_params.yaml \
+        | yq .WORLD_NAME
+    )
+    echo "Running training mode with ${WORLD_NAME} track."
+fi
+
+NUMBER_OF_OBSTACLES=$(
     cat /configs/environment_params.yaml \
-    | yq .WORLD_NAME
+    | yq .NUMBER_OF_OBSTACLES
+)
+NUMBER_OF_BOT_CARS=$(
+    cat /configs/environment_params.yaml \
+    | yq .NUMBER_OF_BOT_CARS
 )
 
 AWS_REGION=us-east-1
@@ -98,12 +120,12 @@ echo "TARGET_REWARD_SCORE:                  \"None\"" | tee -a ${DEFAULT_YAML}
 echo "NUMBER_OF_EPISODES:                   \"0\"" | tee -a ${DEFAULT_YAML}
 echo "JOB_TYPE:                             \"TRAINING\"" | tee -a ${DEFAULT_YAML}
 echo "CHANGE_START_POSITION:                \"true\"" | tee -a ${DEFAULT_YAML}
-echo "ALTERNATE_DRIVING_DIRECTION:          \"false\"" | tee -a ${DEFAULT_YAML}
+echo "ALTERNATE_DRIVING_DIRECTION:          \"true\"" | tee -a ${DEFAULT_YAML}
 echo "REWARD_FILE_S3_KEY:                   \"${REWARD_FUNCTION_S3_KEY}\"" | tee -a ${DEFAULT_YAML}
 echo "MODEL_METADATA_FILE_S3_KEY:           \"${MODEL_METADATA_S3_KEY}\"" | tee -a ${DEFAULT_YAML}
-echo "NUMBER_OF_OBSTACLES:                  \"0\"" | tee -a ${DEFAULT_YAML}
+echo "NUMBER_OF_OBSTACLES:                  \"${NUMBER_OF_OBSTACLES}\"" | tee -a ${DEFAULT_YAML}
 echo "IS_OBSTACLE_BOT_CAR:                  \"false\"" | tee -a ${DEFAULT_YAML}
-echo "RANDOMIZE_OBSTACLE_LOCATIONS:         \"false\"" | tee -a ${DEFAULT_YAML}
+echo "RANDOMIZE_OBSTACLE_LOCATIONS:         \"true\"" | tee -a ${DEFAULT_YAML}
 # echo "OBJECT_POSITIONS:
 #  - 0.1690708037909166, -1
 #  - 0.2638102569075569, 1
@@ -115,7 +137,7 @@ echo "IS_LANE_CHANGE:                       \"false\"" | tee -a ${DEFAULT_YAML}
 echo "LOWER_LANE_CHANGE_TIME:               \"3.0\"" | tee -a ${DEFAULT_YAML}
 echo "UPPER_LANE_CHANGE_TIME:               \"5.0\"" | tee -a ${DEFAULT_YAML}
 echo "LANE_CHANGE_DISTANCE:                 \"1.0\"" | tee -a ${DEFAULT_YAML}
-echo "NUMBER_OF_BOT_CARS:                   \"0\"" | tee -a ${DEFAULT_YAML}
+echo "NUMBER_OF_BOT_CARS:                   \"${NUMBER_OF_BOT_CARS}\"" | tee -a ${DEFAULT_YAML}
 echo "MIN_DISTANCE_BETWEEN_BOT_CARS:        \"2.0\"" | tee -a ${DEFAULT_YAML}
 echo "RANDOMIZE_BOT_CAR_LOCATIONS:          \"true\"" | tee -a ${DEFAULT_YAML}
 echo "BOT_CAR_SPEED:                        \"0.2\"" | tee -a ${DEFAULT_YAML}
@@ -133,7 +155,14 @@ echo "NUM_WORKERS:                          \"${NUM_WORKERS}\"" | tee -a ${DEFAU
 
 SOURCE_YAML="/configs/environment_params.yaml"
 S3_YAML_NAME="training_params.yaml"
-yq eval-all 'select(fileIndex == 0) * select(fileIndex == 1)' ${DEFAULT_YAML} ${SOURCE_YAML} | tee ${S3_YAML_NAME}
+
+if [ -z "$EVALUATION" ]; then
+    yq eval-all 'select(fileIndex == 0) * select(fileIndex == 1)' ${DEFAULT_YAML} ${SOURCE_YAML} | tee ${S3_YAML_NAME}
+elif [ "$EVALUATION" = 'true' ]; then
+    cp ${DEFAULT_YAML} ${S3_YAML_NAME}
+else
+    yq eval-all 'select(fileIndex == 0) * select(fileIndex == 1)' ${DEFAULT_YAML} ${SOURCE_YAML} | tee ${S3_YAML_NAME}
+fi
 
 YAML_S3_KEY=${S3_PREFIX}/${S3_YAML_NAME}
 YAML_S3_SOURCE=/${S3_BUCKET}/${YAML_S3_KEY}

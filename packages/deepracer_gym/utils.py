@@ -1,4 +1,5 @@
 from enum import Enum
+from loguru import logger
 
 
 class RewardParam(Enum):
@@ -35,22 +36,30 @@ class RewardParam(Enum):
         return {key.value[0] : key.value[-1] for key in cls}
 
 
-def terminated_check(reward_params: dict, game_over: bool):
+def terminated_check(episode_status: dict, game_over: bool):
     if game_over and (
-        reward_params['progress'] >= 100
+        episode_status['lap_complete']
         or
-        reward_params['is_crashed']
+        episode_status['crashed']
         or
-        reward_params['is_reversed']
+        episode_status['reversed']
         or
-        reward_params['is_offtrack']
+        episode_status['off_track']
     ):
         return True
     return False
 
 
-def truncated_check(reward_params: dict, game_over: bool):
-    terminated = terminated_check(reward_params, game_over)
+def truncated_check(episode_status: dict, game_over: bool):
+    terminated = terminated_check(episode_status, game_over)
     # time_out or immobilized
     truncated = (game_over and not terminated)
+    if truncated:
+        status = [k for k, v in episode_status.items() if v]
+        if not episode_status['immobilized'] and not episode_status['time_up']:
+            logger.warning(
+                f'Expected immibilized or time_up status for truncated episode.'
+                f'Instead got {status}.'
+                f'Restart deepracer to prevent unexpected behavior.'
+            )
     return truncated

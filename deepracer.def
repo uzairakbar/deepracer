@@ -30,6 +30,10 @@ From: deepracer_base.sif
     file_path='/opt/amazon/install/sagemaker_rl_agent/lib/python3.6/site-packages/markov/multi_agent_coach/multi_agent_level_manager.py'
     patch='/patches/environment_response.py'
     cat "$patch" "$file_path" > temp && mv temp "$file_path"
+    file_path='/opt/amazon/install/sagemaker_rl_agent/lib/python3.6/site-packages/markov/multi_agent_coach/multi_agent_level_manager.py'
+    pattern="agent.observe(env_response)"
+    replace="agent.observe(response(agent, self.environment, env_response))"
+    sed -i -e "s|$pattern|$replace|g" "$file_path"
 
     # handle continuous action spaces
     file_path='/opt/amazon/install/sagemaker_rl_agent/lib/python3.6/site-packages/markov/rollout_worker.py'
@@ -41,11 +45,6 @@ From: deepracer_base.sif
     file_path='/opt/amazon/install/deepracer_simulation_environment/share/deepracer_simulation_environment/launch/rollout_rl_agent.launch'
     pattern='name="publish_to_kinesis_stream" default="true"'
     replace='name="publish_to_kinesis_stream" default="false"'
-    sed -i -e "s|$pattern|$replace|g" "$file_path"
-    
-    file_path='/opt/amazon/install/sagemaker_rl_agent/lib/python3.6/site-packages/markov/multi_agent_coach/multi_agent_level_manager.py'
-    pattern="agent.observe(env_response)"
-    replace="agent.observe(response(agent, self.environment, env_response))"
     sed -i -e "s|$pattern|$replace|g" "$file_path"
 
     # patch gym agent
