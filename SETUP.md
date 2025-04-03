@@ -85,50 +85,18 @@ source "$environment"/bin/activate
 ## PACE ICE
 We recommend students to setup the project locally. However, in cases where that may not be possible, students can explore the following PACE ICE remote compute services.
 
-| PACE ICE Resource | Link |
-| --- | --- |
-| Slurm (interactive jobs) | [gatech.service-now.com/home?id=kb_article_view&sysparm_article=KB0042096](https://gatech.service-now.com/home?id=kb_article_view&sysparm_article=KB0042096) |
-| On-demand resource with GUI | [ondemand-ice.pace.gatech.edu](https://ondemand-ice.pace.gatech.edu/pun/sys/dashboard) |
+* Login to the [GeorgiaTech VPN Service](https://vpn.gatech.edu/global-protect/login.esp). Download and install the [GlobalProtecht VPN client](https://vpn.gatech.edu/global-protect/getsoftwarepage.esp).
+* Using the VPN client, connect to [vpn.gatech.edu](vpn.gatech.edu) and login via your GeorgiaTech username and password.
+* Connect to the PACE ICE on-demand service at [ondemand-ice.pace.gatech.edu](https://ondemand-ice.pace.gatech.edu/pun/sys/dashboard).
+* Click on 'My Interactive Sessions' and select whichever one you prefer on the 'Interactive Apps' meanu (we recommend VS Code).
 
-We also provide one such approach below as a reference. Please use your **GeorgiaTech Student ID** in place of all of the placeholders below.
+### Environment setup
+Please note that PACE ICE machines already come with Apptainer and Conda installed (use `module load anaconda3` or `module load mamba`). As such, you can follow the instructions from the [python environment section](#Python-environment) as is. However, we recommend the following additions:
 
-### Login to PACE ICE
+- **PyTorch:** Please use the following value for `--index-url` in the `requirements.txt` file to use CUDA with PyTorch.
+- **prefix:** We recommend that you install the conda environment using a `--prefix` flag as the `~/scratch` directory to prevent using up your storage.
 ```bash
-GT_ID=<YOUR_GT_ID_HERE>
-ssh "$GT_ID"@login-ice.pace.gatech.edu
-```
-
-### Run an interactive job
-```bash
-GT_ID=<YOUR_GT_ID_HERE>
-JOB_NAME='cs7642'
-TIME_LIMIT=360          # 6 hrs
-MEMORY='32GB'           # change as required
-CPUS=8                  # change as required
-GPUS=1                  # change as required
-salloc --nodes=1 \
-    --ntasks=1 \
-    --cpus-per-task="$CPUS" \
-    --mem="$MEMORY" \
-    --gpus="$GPUS" \
-    --time="$TIME_LIMIT" \
-    --job-name="$JOB_NAME"
-```
-For details, refer to the [Slurm documentaiton](https://gatech.service-now.com/home?id=kb_article_view&sysparm_article=KB0042096).
-
-### `ssh` into a running interactive job
-To `ssh` into a running job (named `cs7642`) from another terminal on PACE ICE, use the following command.
-```bash
-GT_ID=<YOUR_GT_ID_HERE>
-JOB_NAME='cs7642'
-nodelist=$(
-    squeue -u "$GT_ID" | awk '$3 == "'"$JOB_NAME"'" {print $NF}'
-)
-ssh "$GT_ID"@"$nodelist"
-```
-
-### Use Conda in an interactive job
-To use the conda in an interactive job, run the following command.
-```bash
-module load anaconda3
+environment='deepracer'
+conda env create -f environment.yaml --prefix ~/scratch/"$environment"
+conda activate ~/scratch/"$environment"
 ```
