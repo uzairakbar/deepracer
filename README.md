@@ -1,5 +1,7 @@
 # Project 4, Spring '25 - DeepRacer
 
+![deepracer](https://github.gatech.edu/rldm/P4_deepracer/assets/78388/86684160-fe6f-4a03-972c-078cd9a9afde)
+
 ## Clone this repository
 ```bash
 git clone https://github.gatech.edu/rldm/P4_deepracer.git
