@@ -49,7 +49,7 @@ docker run hello-world
 
 ### Conda
 #### Windows
-Install Miniconda from [here](/docs/getting-started/miniconda/install#macos-linux-installation).
+Install Miniconda from [here](https://www.anaconda.com/docs/getting-started/miniconda/install#windows-installation).
 #### Linux
 ```bash
 mkdir -p ~/miniconda3
