@@ -1,7 +1,14 @@
 # Project 4, Spring '25 - DeepRacer
 
-## Setup \& Dependencies
-- Docker.
+## Clone this repository
+```bash
+git clone https://github.gatech.edu/rldm/P4_deepracer.git
+cd P4_deepracer
+```
+
+## Setup and Install Dependencies
+This project requires the following to work.
+- Docker or Apptainer.
 - Conda (or Python 3.10 or higher).
 - Linux or Windows machine with an Intel CPU.
 
@@ -29,10 +36,4 @@ observation, reward, terminated, truncated, info = env.step(
     env.action_space.sample()
 )
 ```
-See the [packages directory](https://github.gatech.edu/rldm/P4_deepracer/tree/main/packages) and the [usage.ipynb](https://github.gatech.edu/rldm/P4_deepracer/tree/main/usage.ipynb) notebook for details.
-
-## Logging
-View training metrics via tensorboard.
-```bash
-tensorboard --logdir runs [--port=PORT; default=6006]
-```
+See the [packages directory](https://github.gatech.edu/rldm/P4_deepracer/tree/main/packages) and the [`usage.ipynb`](https://github.gatech.edu/rldm/P4_deepracer/tree/main/usage.ipynb) notebook for details.
