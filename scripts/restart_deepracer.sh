@@ -33,7 +33,7 @@ source scripts/stop_deepracer.sh
 sleep 2
 
 source scripts/start_deepracer.sh \
-    -C="$cpus" \
-    -M="$memory" \
-    -E="$evaluation" \
-    -W="$world_name"
+    -C "$cpus" \
+    -M "$memory" \
+    -E "$evaluation" \
+    -W "$world_name"
