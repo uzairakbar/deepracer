@@ -200,7 +200,15 @@ def demo(
     # e.g. 'agent_rl-video-episode-0.mp4' or similar
     filtered_videos = sorted(
         f for f in os.listdir(directory)
-        if f.endswith('.mp4') and agent.name in f
+        if (
+            f.endswith('.mp4')
+            and
+            agent.name in f
+            and
+            world_name in f
+            and
+            race_type in f
+        )
     )
     if len(filtered_videos) == 0:
         logger.warning('No videos found!')
