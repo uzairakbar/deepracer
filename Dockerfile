@@ -55,9 +55,6 @@ RUN mv -f /patches/gym_agent.py \
 RUN mv -f /patches/launch-simapp-rosnodes.sh /opt/ml/code/
 RUN chmod +x /opt/ml/code/launch-simapp-rosnodes.sh
 
-# copy over config files
-COPY ./configs/* /configs
-
 # set working directory
 WORKDIR /opt/ml/code/
 
