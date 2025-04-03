@@ -2,24 +2,24 @@
 
 ## Setup
 ### Dependencies
-- Docker
+- Docker or Apptainer.
 - Python 3.10 or higher.
 - Linux or Windows machine with Intel based CPU.
 
 ### Install
 ```bash
-pip install ./
+pip install -e ./
 ```
 
 ## Usage
-### Launch the simulation
+### Start the simulation service
 From the root of this repository, start the simulator container with the following command.
 ```bash
 source scripts/start_deepracer.sh \
     [-C=MAX_CPU; default="3"] \
     [-M=MAX_MEMORY; default="6g"]
 ```
-Similarly, use `scripts/stop_deepracer.sh` and `scripts/cleanup_deepracer.sh` to stop the simulaiton container and clean setup artifacts (when finished with the project).
+You may also find other scripts under `scripts/` similarly useful to stop or restart the simulation service, etc.
 
 To check if the container is rumming you can use the following commands.
 ```bash
@@ -43,24 +43,24 @@ observation, reward, terminated, truncated, info = env.step(
     env.action_space.sample()
 )
 ```
-The `terminated` flag is trigerred by the following[^1].
-```json
+The `terminated` flag is trigerred by the following in `info['episode_status']`.
+```yaml
 {
-    "progress": float,          # accessible in info['reward_params']
-    "is_crashed": Boolean,      # accessible in info['reward_params']
-    "is_reversed": Boolean,     # accessible in info['reward_params']
-    "is_offtrack": Boolean,     # accessible in info['reward_params']
+    "lap_complete": float,  # same as info['reward_params']['progress'] >= 100
+    "crashed": boolean,     # same as info['reward_params']['is_crashed']
+    "off_track": boolean,   # same as info['reward_params']['is_offtrack']
+    "reversed": boolean,    # progress decreases for 15 consecutive steps. NOT accessible in info['reward_params'].
 }
 ```
 The `truncated` flag is trigerred by the following (not accessible in `info['reward_params']`).
-```json
+```yaml
 {
-    "immobilized": Boolean,     # move <= 0.0003 for 15 consecutive steps
-    "time_up": Boolean,         # 180 seconds max, or 100_000 steps max
+    "immobilized": boolean,     # move <= 0.0003 for 15 consecutive steps
+    "time_up": boolean,         # 180 seconds max, or 100_000 steps max
 }
 ```
 
-[^1]: However, the relationship may not straightforward. For example, even if `is_crashed` is `True`, the `terminated` flag might not get trigerred if the collision object is moving faster than our racer such that an actual collision will not happen.
+[^1]: However, the relationship may not be straightforward. For example, even if `crashed` is `True`, the `terminated` flag might not get trigerred if the collision object is moving faster than our racer such that an actual collision will not happen.
 
 For more details, see the [`gymnasium` API section](#gymnasium-API) below.
 
@@ -191,5 +191,73 @@ The following tracks can be selected by setting the `WORLD_NAME` parameter. You 
 ```
 
 ## `gymnasium` API
+The DeepRacer environment follows the standard `gymnasium` API. Here are the key components:
 
-t.b.d.
+### Environment Creation
+```python
+import gymnasium as gym
+import deepracer_gym
+
+env = gym.make('deepracer-v0')
+```
+
+### Observation Space
+The observation space is a composotive space defined by a [`gymnasium.spaces.Dict`](https://gymnasium.farama.org/api/spaces/composite/) dictionary object containing the following keys and values depending on the sensors specified in `configs/agent_params.json`:
+```python
+{
+    # two 8-bit greyscale (1 channel) images
+    'STEREO_CAMERAS': Box(
+        low=0, high=255, shape=(2, 120, 160)
+    ),
+    # one 8-bit colored (3 channel) image
+    'FRONT_FACING_CAMERA': Box(
+        low=0, high=255, shape=(3, 120, 160)
+    ),
+    'LIDAR': Box(
+        low=0.15, high=float('inf'), shape=(64,)
+    ),
+}
+```
+
+### Action Space
+Depending on the specification in `configs/agent_params.json`, the actions space can be the following.
+
+| Type | `gymnasium.spaces` object |
+|---|---|
+| Discrete | `Discrete(n)`, where `n` is 5 for [the example above](#discrete-actions-with-lidar--stereo-camera). |
+| Continuous | `Box(low, high, shape=(n,))`, where `n` is 2 for [the example above](#continuous-actions-with-lidar--front-facing-camera). |
+
+### Environment Step
+```python
+observation, reward, terminated, truncated, info = env.step(action)
+```
+
+The step function returns:
+- `observation`: Dictionary of sensor readings
+- `reward`: Float value from reward function
+- `terminated`: Boolean indicating episode end due to:
+  - Crash
+  - Off-track
+  - Reversed direction
+  - Lap completion
+- `truncated`: Boolean indicating episode end due to:
+  - Time/Step limit
+  - Immobilization
+- `info`: Dictionary containing:
+  - `reward_params`: Parameters used in reward calculation
+  - `episode_status`: Current episode state
+
+### Environment Reset
+```python
+observation, info = env.reset()
+```
+
+### Environment Close
+```python
+env.close()
+```
+
+### Rendering
+```python
+env = gym.make('deepracer-v0', render_mode='rgb_array')  # Returns numpy array
+```

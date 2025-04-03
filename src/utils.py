@@ -3,6 +3,7 @@ import json
 import yaml
 import torch
 import random
+import shutil
 import enlighten
 import subprocess
 import numpy as np
@@ -216,7 +217,17 @@ def demo(
     )
 
 
+def command_exists(command: str) -> bool:
+    '''
+    Check if a command exists and is executable in the system's PATH.
+    '''
+    return shutil.which(command) is not None
+
+
 def run_command(command):
+    if command_exists('docker'):
+        command = ['sudo'] + command
+    
     result=subprocess.run(
         command, capture_output=True, text=True
     )
@@ -264,55 +275,56 @@ def evaluate_track(
         'progress': [],
         'lap_time': [],
     }
-    with torch.no_grad():
-        evaluation_progress = PROGRESS_MANAGER.counter(
-            total=EVAL_EPISODES, desc=f'Evaluating {world_name}', unit='episodes', leave=True
+    evaluation_progress = PROGRESS_MANAGER.counter(
+        total=EVAL_EPISODES, desc=f'Evaluating {world_name}', unit='episodes'
+    )
+    for episode in range(EVAL_EPISODES):
+        
+        episode_progress = PROGRESS_MANAGER.counter(
+            total=MAX_EVAL_STEPS, desc=f'Episode {episode}', unit='steps', leave=False
         )
-        for episode in range(EVAL_EPISODES):
+        for t in range(MAX_EVAL_STEPS):
+
+            action = agent.get_action(torch.Tensor(observation)[None, :])
             
-            episode_progress = PROGRESS_MANAGER.counter(
-                total=MAX_EVAL_STEPS, desc=f'Episode {episode}', unit='steps', leave=False
+            if not isinstance(action, np.ndarray) and torch.is_tensor(action):
+                action = action.cpu().detach().numpy()
+            
+            if isinstance(eval_environment.action_space, spaces.Discrete):
+                action = action.item()
+
+            observation, reward, terminated, truncated, info = eval_environment.step(
+                action
             )
-            for t in range(MAX_EVAL_STEPS):
 
-                action = agent.get_action(torch.Tensor(observation)[None, :])
-                
-                if not isinstance(action, np.ndarray) and torch.is_tensor(action):
-                    action = action.cpu().detach().numpy()
-                
-                if isinstance(eval_environment.action_space, spaces.Discrete):
-                    action = action.item()
+            episode_progress.update()
+            episode_progress.refresh()
 
-                observation, reward, terminated, truncated, info = eval_environment.step(
-                    action
+            done = terminated or truncated
+            if done or t == MAX_EVAL_STEPS - 1:
+                progress = info['reward_params']['progress']
+                lap = lap_time(info)
+
+                eval_metrics['progress'].append(
+                    progress
+                )
+                eval_metrics['lap_time'].append(
+                    lap
                 )
 
-                done = terminated or truncated
-                if done or t == MAX_EVAL_STEPS - 1:
-                    progress = info['reward_params']['progress']
-                    lap = lap_time(info)
+                logger.info(
+                    f'Episode {episode}:\t progress: {progress}\t lap_time: {lap}'
+                )
 
-                    eval_metrics['progress'].append(
-                        progress
-                    )
-                    eval_metrics['lap_time'].append(
-                        lap
-                    )
+                observation, info = eval_environment.reset()
+                
+                break
 
-                    logger.info(
-                        f'Episode {episode}:\t progress: {progress}\t lap_time: {lap}'
-                    )
-
-                    observation, info = eval_environment.reset()
-                    
-                    break
-
-                episode_progress.update()
-            episode_progress.close()
-            
-            evaluation_progress.update()
-        evaluation_progress.close()
-    
+        episode_progress.close()
+        
+        evaluation_progress.update()
+        evaluation_progress.refresh()
+    evaluation_progress.close()
     eval_environment.close()
     
     try:
@@ -358,6 +370,7 @@ def evaluate(
     eval_metrics = {}
     for world_name in eval_world_names:
         status.update(track=world_name)
+        status.refresh()
         eval_metrics[world_name] = evaluate_track(
             agent=agent,
             world_name=world_name,
