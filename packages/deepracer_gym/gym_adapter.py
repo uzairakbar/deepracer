@@ -10,7 +10,7 @@ from deepracer_gym.utils import (
 
 PORT: int=8888
 HOST: str='127.0.0.1'
-TIMEOUT_LONG: int=600_000   # 10m
+TIMEOUT_LONG: int=100_000   # 1.7m
 TIMEOUT_SHORT: int=20_000   # 20s
 DUMMY_ACTION_DISCRETE: int=0
 DUMMY_ACTION_CONTINUOUS: list[float]=[0.0, 0.0]
@@ -70,8 +70,8 @@ class DeepracerGymAdapter:
         info['goal'] = response['_goal']
 
         game_over = response['_game_over']
-        terminated = terminated_check(info['reward_params'], game_over)
-        truncated = truncated_check(info['reward_params'], game_over)
+        terminated = terminated_check(info['episode_status'], game_over)
+        truncated = truncated_check(info['episode_status'], game_over)
         
         reward = response['_reward']
         observation = response['_next_state']
@@ -82,4 +82,5 @@ class DeepracerGymAdapter:
                 else measurement
             ) for sensor, measurement in observation.items()
         }
+
         return observation, reward, terminated, truncated, info
