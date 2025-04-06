@@ -10,8 +10,8 @@ from deepracer_gym.utils import (
 
 PORT: int=8888
 HOST: str='127.0.0.1'
-TIMEOUT_LONG: int=100_000   # 1.7m
-TIMEOUT_SHORT: int=20_000   # 20s
+TIMEOUT_LONG: int=240_000   # 4m
+TIMEOUT_SHORT: int=40_000   # 40s
 DUMMY_ACTION_DISCRETE: int=0
 DUMMY_ACTION_CONTINUOUS: list[float]=[0.0, 0.0]
 ActionType: TypeAlias=(int | np.ndarray | list[float])
