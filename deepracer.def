@@ -9,7 +9,6 @@ From: deepracer_base.sif
 
 %post
     # install jq and yq
-    curl -s https://webinstall.dev/jq | bash
     wget https://github.com/mikefarah/yq/releases/latest/download/yq_linux_amd64 -O /usr/bin/yq
     chmod +x /usr/bin/yq
 
