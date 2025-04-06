@@ -94,6 +94,9 @@ elif command_exists apptainer; then
 
     apptainer pull deepracer_base.sif docker://"$base"
 
+    # install jq -- does not seem to work inside .def file
+    curl -s https://webinstall.dev/jq | bash
+
     yes no | apptainer build --ignore-fakeroot-command "$SCRATCH_DIR"/"$image".sif deepracer.def
 
     overlay=/tmp/"$container"_overlay
