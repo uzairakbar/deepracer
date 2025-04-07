@@ -37,8 +37,17 @@ else
     SCRATCH_DIR="$PWD"
 fi
 
+# check for Apptainer
+if command_exists apptainer; then
+
+    rm -f "$SCRATCH_DIR"/"$image".sif
+    overlay=/tmp/"$container"_overlay
+    rm -rf "$overlay"
+
+    echo "Cleaned deepracer Apptainer environment."
+
 # check for Docker
-if command_exists docker; then
+elif command_exists docker; then
     
     docker rm "$container"
 
@@ -49,16 +58,6 @@ if command_exists docker; then
     docker system prune --force
 
     echo "Cleaned deepracer Docker environment."
-fi
-
-# check for Apptainer
-if command_exists apptainer; then
-
-    rm -f "$SCRATCH_DIR"/"$image".sif
-    overlay=/tmp/"$container"_overlay
-    rm -rf "$overlay"
-
-    echo "Cleaned deepracer Apptainer environment."
 fi
 
 # check for Conda
