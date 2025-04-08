@@ -97,6 +97,9 @@ Please note that PACE ICE machines already come with Apptainer and Conda install
 - **prefix:** We recommend that you install the conda environment using a `--prefix` flag as the `~/scratch` directory to prevent using up your storage.
 ```bash
 environment='deepracer'
-conda env create -f environment.yaml --prefix ~/scratch/"$environment"
-conda activate ~/scratch/"$environment"
+scratch_directory="$HOME"/scratch/conda
+conda env create -f environment.yaml \
+    --prefix "$scratch_directory"/"$environment"
+conda config --append envs_dirs "$scratch_directory"
+conda activate "$environment"
 ```

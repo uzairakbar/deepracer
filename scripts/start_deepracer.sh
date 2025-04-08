@@ -69,27 +69,9 @@ else
     SCRATCH_DIR="$PWD"
 fi
 
-# check for Docker
-if command_exists docker; then
-    echo "Building deepracer Docker container."
-    
-    docker pull "$base"
-    docker build -t "$image" .
 
-    docker system prune --force
-
-    docker run --rm --detach \
-        --name="$container" \
-        -v "$PWD"/"$configs":/"$configs":ro \
-        -p 8888:8888 -p 5000:5000 \
-        -e EVALUATION="$evaluation" \
-        -e EVAL_WORLD_NAME="$world_name" \
-        --cpus="$cpus" --memory="$memory" \
-        "$image"
-    
-    echo "Started deepracer Docker container."
 # check for Apptainer
-elif command_exists apptainer; then
+if command_exists apptainer; then
     echo "Building deepracer Apptainer container."
 
     apptainer pull deepracer_base.sif docker://"$base"
@@ -117,6 +99,26 @@ elif command_exists apptainer; then
     #     --cpus="$cpus" --memory="$memory"
 
     echo "Started deepracer Apptainer container."
+    
+# check for Docker
+elif command_exists docker; then
+    echo "Building deepracer Docker container."
+    
+    docker pull "$base"
+    docker build -t "$image" .
+
+    docker system prune --force
+
+    docker run --rm --detach \
+        --name="$container" \
+        -v "$PWD"/"$configs":/"$configs":ro \
+        -p 8888:8888 -p 5000:5000 \
+        -e EVALUATION="$evaluation" \
+        -e EVAL_WORLD_NAME="$world_name" \
+        --cpus="$cpus" --memory="$memory" \
+        "$image"
+    
+    echo "Started deepracer Docker container."
 else
     # if neither Docker nor Apptainer is found
     echo "Neither Docker nor Apptainer is installed"
