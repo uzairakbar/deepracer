@@ -8,15 +8,8 @@ command_exists() {
 export container=deepracer
 export image=deepracer
 
-# check for Docker
-if command_exists docker; then
-    
-    docker stop "$container"
-
-    echo "Stopped deepracer Docker container."
-    
 # check for Apptainer
-elif command_exists apptainer; then
+if command_exists apptainer; then
 
     apptainer instance stop "$container" || echo "No ${container} instance running."
 
@@ -24,6 +17,13 @@ elif command_exists apptainer; then
     rm -rf "$overlay"
 
     echo "Stopped deepracer Apptainer container."
+
+# check for Docker
+elif command_exists docker; then
+    
+    docker stop "$container"
+
+    echo "Stopped deepracer Docker container."
 
 else
 
