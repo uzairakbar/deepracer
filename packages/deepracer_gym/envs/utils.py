@@ -117,14 +117,8 @@ def make_action_space(config_path: str=AGENT_PARAMS_PATH):
             size
         )
     elif space_type == 'continuous':
-        low = np.array([
-            bounds['low'] for action, bounds in config['action_space'].items()
-        ])
-        high = np.array([
-            bounds['high'] for action, bounds in config['action_space'].items()
-        ])
         action_space = spaces.Box(
-            low=low, high=high, shape=(2,), dtype=np.float64
+            low=-1, high=1, shape=(2,), dtype=np.float64
         )
     else:
         raise ValueError(
