@@ -26,9 +26,25 @@ kill_port() {
     fi
 }
 
+# calculate unique(-ish) port number
+string_to_port() {
+  local input="$1"
+  local hash
+  local hash_prefix
+  local hash_int
+  local port_range=$((32767 - 1024 + 1))
+
+  hash=$(echo -n "$input" | sha256sum | awk '{print $1}')
+  hash_prefix=${hash:0:8}  # First 4 bytes (8 hex chars = 32 bits)
+  hash_int=$((16#$hash_prefix))
+
+  echo $((1024 + (hash_int % port_range)))
+}
+
 
 export container=deepracer
 export image=deepracer
+
 
 # check for Apptainer
 if command_exists apptainer; then
@@ -38,14 +54,18 @@ if command_exists apptainer; then
     overlay=/tmp/"$container"_overlay
     rm -rf "$overlay"
 
-    echo "Stopped deepracer Apptainer container."
+    my_port=$(string_to_port "$USER")
+
+    echo "Stopped deepracer Apptainer container at port ${my_port}."
 
 # check for Docker
 elif command_exists docker; then
     
     docker stop "$container"
 
-    echo "Stopped deepracer Docker container."
+    my_port=8888
+
+    echo "Stopped deepracer Docker container at port ${my_port}."
 
 else
 
@@ -56,5 +76,6 @@ fi
 
 sleep 2
 
-# just make sure nothing is running
-kill_port 8888
+# # just make sure nothing is running
+# kill_port "$my_port"
+echo "Killed process at port ${my_port}."
