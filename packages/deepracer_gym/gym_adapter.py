@@ -33,7 +33,6 @@ class DeepracerGymAdapter:
         self.zmq_client = DeepracerClientZMQ(host=host, port=port)
         self.zmq_client.ready()
         self.response = None
-        self.previous_done = False
 
     def _send_action(self, action: ActionType):
         action: dict[str, ActionType] = {'action': action}
@@ -47,21 +46,14 @@ class DeepracerGymAdapter:
             # Smaller timeout after first connection
             self.zmq_client.socket.set(zmq.SNDTIMEO, TIMEOUT_SHORT)
             self.zmq_client.socket.set(zmq.RCVTIMEO, TIMEOUT_SHORT)
-        elif self.previous_done:
-            pass
-        
-        # If prev_episode done and reset called, fast forward one step for new episode
-        # Action ignored due to reset()
-        step = 0
-        while step != 1:
+        else:
+            # If prev_episode done and reset called, fast forward one step for new episode
+            # Action ignored due to reset()
             self.response = self._send_action(self.dummy_action)
-            step = (
-                self.response['info']['reward_params']['steps']
-            )
         
         if not isinstance(self.response['info'], dict):
             self.response['info'] = dict()
-        # self.response['info']['reward_params'] = RewardParam.make_default_param()
+        self.response['info']['reward_params'] = RewardParam.make_default_param()
         observation, _, _, _, info = self._parse_response(self.response)
         return observation, info
     
