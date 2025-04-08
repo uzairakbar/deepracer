@@ -1,3 +1,4 @@
+import os
 import zmq
 import json
 import msgpack
@@ -11,6 +12,10 @@ m.patch()
 AGENT_PARAMS_PATH = '/configs/agent_params.json'
 DUMMY_ACTION_DISCRETE=0
 DUMMY_ACTION_CONTINUOUS=[0.0, 0.0]
+try:
+    GYM_PORT=int(os.environ['GYM_PORT'])
+except:
+    GYM_PORT=8888
 
 
 def action_space_type(config):    
@@ -35,7 +40,7 @@ def action_space_type(config):
 
 
 class Server:
-    def __init__(self, host='0.0.0.0', port=8888):
+    def __init__(self, host='0.0.0.0', port=GYM_PORT):
         self.host = host
         self.port = port
         self.socket = zmq.Context.instance().socket(zmq.REP)
