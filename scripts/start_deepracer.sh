@@ -14,6 +14,21 @@ command_exists() {
     command -v "$1" >/dev/null 2>&1
 }
 
+# calculate unique(-ish) port number
+string_to_port() {
+  local input="$1"
+  local hash
+  local hash_prefix
+  local hash_int
+  local port_range=$((32767 - 1024 + 1))
+
+  hash=$(echo -n "$input" | sha256sum | awk '{print $1}')
+  hash_prefix=${hash:0:8}  # First 4 bytes (8 hex chars = 32 bits)
+  hash_int=$((16#$hash_prefix))
+
+  echo $((1024 + (hash_int % port_range)))
+}
+
 # check if on a PACE ICE machine
 on_pace_ice() {
     local var="$1"
@@ -21,6 +36,16 @@ on_pace_ice() {
         return 0  # Success (matches)
     else
         return 1  # Failure (does not match)
+    fi
+}
+
+# install jq if not already present
+install_jq() {
+    if [[ -x "$HOME/.local/bin/jq" ]]; then
+        echo "jq already installed at $HOME/.local/bin/jq"
+    else
+        curl -s https://webinstall.dev/jq | bash
+        echo "jq installed at $HOME/.local/bin/jq"
     fi
 }
 
@@ -77,9 +102,12 @@ if command_exists apptainer; then
     apptainer pull deepracer_base.sif docker://"$base"
 
     # install jq -- does not seem to work inside .def file
-    curl -s https://webinstall.dev/jq | bash
+    install_jq
 
     yes no | apptainer build --ignore-fakeroot-command "$SCRATCH_DIR"/"$image".sif deepracer.def
+
+    MY_PORT=$(string_to_port "$USER")
+    echo "Using port $MY_PORT for deepracer."
 
     overlay=/tmp/"$container"_overlay
     rm -rf "$overlay" && mkdir "$overlay"
@@ -87,7 +115,7 @@ if command_exists apptainer; then
         --no-mount "$HOME",/tmp,/dev,/etc/hosts,/etc/localtime,/proc,/sys,/var/tmp \
         --bind configs:/configs \
         --overlay "$overlay"/:/. \
-        --env EVALUATION="$evaluation",EVAL_WORLD_NAME="$world_name" \
+        --env EVALUATION="$evaluation",EVAL_WORLD_NAME="$world_name",GYM_PORT="$MY_PORT" \
         "$SCRATCH_DIR"/"$image".sif "$container" \
         --cpus="$cpus" --memory="$memory"
     
@@ -109,10 +137,12 @@ elif command_exists docker; then
 
     docker system prune --force
 
+    echo "Using port 8888 for deepracer."
+
     docker run --rm --detach \
         --name="$container" \
         -v "$PWD"/"$configs":/"$configs":ro \
-        -p 8888:8888 -p 5000:5000 \
+        -p 8888:8888 \
         -e EVALUATION="$evaluation" \
         -e EVAL_WORLD_NAME="$world_name" \
         --cpus="$cpus" --memory="$memory" \

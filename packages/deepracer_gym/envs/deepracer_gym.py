@@ -1,18 +1,34 @@
+import os
+import platform
 import numpy as np
 import gymnasium as gym
+from loguru import logger
 from gymnasium import spaces
 from typing import TypeAlias
 import matplotlib.pyplot as plt
 
 from deepracer_gym.gym_adapter import DeepracerGymAdapter
 from deepracer_gym.envs.utils import (
-    make_action_space, make_observation_space, num_channels
+    make_action_space,
+    make_observation_space,
+    num_channels,
+    string_to_port,
+    get_host_name
 )
 
 
-PORT: int=8888
-HOST: str='127.0.0.1'
 ActionType: TypeAlias=(int | np.ndarray | list[float])
+HOST: str='127.0.0.1'
+DEFAULT_PORT: int=8888
+PACE_DOMAIN: str='.pace.gatech.edu'
+try:
+    if get_host_name().endswith(PACE_DOMAIN):
+        port = string_to_port(os.environ['USER'])
+    else:
+        port = DEFAULT_PORT
+except:
+    port = DEFAULT_PORT
+
 
 class DeepracerGymEnv(gym.Env):
     metadata = {
@@ -22,11 +38,14 @@ class DeepracerGymEnv(gym.Env):
     def __init__(
             self,
             host: str=HOST,
-            port: int=PORT,
+            port: int=port,
             render_mode: str='rgb_array',
             **kwargs
         ):
         super().__init__(**kwargs)
+        logger.info(
+            f'Using to port {port} for deepracer server.'
+        )
         self.render_mode = render_mode
         self.action_space, self._action_metadata = make_action_space()
         self.observation_space, self._observation_metadata = make_observation_space()

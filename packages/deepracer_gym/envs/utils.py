@@ -1,4 +1,6 @@
 import json
+import hashlib
+import platform
 import numpy as np
 from loguru import logger
 from gymnasium import spaces
@@ -152,3 +154,19 @@ def num_channels(measurement: np.ndarray):
     elif dimensions == 3:
         channels = measurement.shape[0]
     return channels
+
+
+def string_to_port(string):
+    hash_bytes = hashlib.sha256(string.encode()).digest()
+    hash_int = int.from_bytes(
+        hash_bytes[:4], byteorder='big'     # Only first 4 bytes
+    )
+    port = 1024 + (hash_int % (32767 - 1024 + 1))
+    return int(port)
+
+
+def get_host_name():
+    try:
+        return platform.node()
+    except:
+        return 'unknown'
