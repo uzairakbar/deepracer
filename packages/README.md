@@ -116,13 +116,13 @@ We provide two examples below:
 ```json
 {
     "action_space": {
-        "speed": {
-            "high": 2,
-            "low": 1
-        },
         "steering_angle": {
             "high": 30,
             "low": -30
+        },
+        "speed": {
+            "high": 2,
+            "low": 1
         }
     },
     "action_space_type": "continuous",
@@ -225,7 +225,7 @@ Depending on the specification in `configs/agent_params.json`, the actions space
 | Type | `gymnasium.spaces` object |
 |---|---|
 | Discrete | `Discrete(n)`, where `n` is 5 for [the example above](#discrete-actions-with-lidar--stereo-camera). |
-| Continuous | `Box(low, high, shape=(n,))`, where `n` is 2 for [the example above](#continuous-actions-with-lidar--front-facing-camera). |
+| Continuous | `Box(-1, 1, shape=(n,))`, where `n` is 2 for [the example above](#continuous-actions-with-lidar--front-facing-camera). |
 
 ### Environment Step
 ```python
