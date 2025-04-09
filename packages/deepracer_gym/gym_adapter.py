@@ -1,10 +1,11 @@
 import zmq
 import numpy as np
 from typing import TypeAlias
+from collections.abc import Callable
 
 from deepracer_gym.zmq_client import DeepracerClientZMQ
 from deepracer_gym.utils import (
-    RewardParam, terminated_check, truncated_check
+    terminated_check, truncated_check
 )
 
 
@@ -12,8 +13,12 @@ PORT: int=8888
 HOST: str='127.0.0.1'
 TIMEOUT_LONG: int=240_000   # 4m
 TIMEOUT_SHORT: int=40_000   # 40s
-DUMMY_ACTION_DISCRETE: int=0
-DUMMY_ACTION_CONTINUOUS: list[float]=[0.0, 0.0]
+DUMMY_ACTION_DISCRETE: Callable[[], int]=(
+    lambda: 0
+)
+DUMMY_ACTION_CONTINUOUS: Callable[[], np.ndarray[float]]=(
+    lambda: np.random.uniform(-1, 1, 2)
+)
 ActionType: TypeAlias=(int | np.ndarray | list[float])
 
 class DeepracerGymAdapter:
@@ -33,10 +38,12 @@ class DeepracerGymAdapter:
         self.zmq_client = DeepracerClientZMQ(host=host, port=port)
         self.zmq_client.ready()
         self.response = None
+        self.done = False
 
     def _send_action(self, action: ActionType):
         action: dict[str, ActionType] = {'action': action}
         self.response = self.zmq_client.send_message(action)
+        self.done = self.response['_game_over']
         return self.response
     
     def env_reset(self):
@@ -46,21 +53,34 @@ class DeepracerGymAdapter:
             # Smaller timeout after first connection
             self.zmq_client.socket.set(zmq.SNDTIMEO, TIMEOUT_SHORT)
             self.zmq_client.socket.set(zmq.RCVTIMEO, TIMEOUT_SHORT)
+        elif self.done:
+            pass
         else:
-            # If prev_episode done and reset called, fast forward one step for new episode
-            # Action ignored due to reset()
-            self.response = self._send_action(self.dummy_action)
+            while not self.done:
+                self.response = self._send_action(self.dummy_action())
         
         if not isinstance(self.response['info'], dict):
             self.response['info'] = dict()
-        self.response['info']['reward_params'] = RewardParam.make_default_param()
+        
+        # If prev_episode done and reset called, fast forward one step for new episode
+        # dummy action ignored due to reset()
+        step = (
+            self.response['info']['reward_params']['steps']
+        )
+        while step != 1:
+            self.response = self._send_action(self.dummy_action())
+            step = (
+                self.response['info']['reward_params']['steps']
+            )
+
         observation, _, _, _, info = self._parse_response(self.response)
         return observation, info
     
     def send_action(self, action: ActionType):
-        action: dict[str, ActionType] = {'action': action}
-        self.response = self.zmq_client.send_message(action)
-        return self._parse_response(self.response)
+        if self.done:
+            return self._parse_response(self.response)
+        response = self._send_action(action)
+        return self._parse_response(response)
     
     @staticmethod
     def _parse_response(response: dict):
