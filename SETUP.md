@@ -94,6 +94,9 @@ We recommend students to setup the project locally. However, in cases where that
 Please note that PACE ICE machines already come with Apptainer and Conda installed (use `module load anaconda3` or `module load mamba`). As such, you can follow the instructions from the [python environment section](#Python-environment) as is. However, we recommend the following additions:
 
 - **PyTorch:** Please use the following value for `--index-url` in the `requirements.txt` file to use CUDA with PyTorch.
+```bash
+--index-url https://download.pytorch.org/whl/cu126
+```
 - **prefix:** We recommend that you install the conda environment using a `--prefix` flag as the `~/scratch` directory to prevent using up your storage.
 ```bash
 environment='deepracer'
