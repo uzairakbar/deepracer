@@ -106,8 +106,16 @@ if command_exists apptainer; then
 
     yes no | apptainer build --ignore-fakeroot-command "$SCRATCH_DIR"/"$image".sif deepracer.def
 
-    MY_PORT=$(string_to_port "$USER")
-    echo "Using port $MY_PORT for deepracer."
+    GYM_PORT=$(string_to_port "$USER")
+    echo "Using port $GYM_PORT for deepracer."
+    
+    GAZEBO_PORT=$(string_to_port "GAZEBO_$USER")        # default is 11345
+    GAZEBO_MASTER_URI="http://localhost:$GAZEBO_PORT"
+    echo "Using port $GAZEBO_MASTER_URI for Gazebo Master."
+
+    ROS_PORT=$(string_to_port "ROS_$USER")              # defaults is 11311
+    ROS_MASTER_URI="http://localhost:$ROS_PORT"
+    echo "Using port $ROS_MASTER_URI for ROS Master."
 
     overlay=/tmp/"$container"_overlay
     rm -rf "$overlay" && mkdir "$overlay"
@@ -115,7 +123,7 @@ if command_exists apptainer; then
         --no-mount "$HOME",/tmp,/dev,/etc/hosts,/etc/localtime,/proc,/sys,/var/tmp \
         --bind configs:/configs \
         --overlay "$overlay"/:/. \
-        --env EVALUATION="$evaluation",EVAL_WORLD_NAME="$world_name",GYM_PORT="$MY_PORT" \
+        --env EVALUATION="$evaluation",EVAL_WORLD_NAME="$world_name",GYM_PORT="$GYM_PORT",GAZEBO_MASTER_URI="$GAZEBO_MASTER_URI",ROS_MASTER_URI="$ROS_MASTER_URI" \
         "$SCRATCH_DIR"/"$image".sif "$container" \
         --cpus="$cpus" --memory="$memory"
     
