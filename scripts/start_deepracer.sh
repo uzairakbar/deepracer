@@ -161,3 +161,5 @@ else
     # if neither Docker nor Apptainer is found
     echo "Neither Docker nor Apptainer is installed"
 fi
+
+sleep 2
