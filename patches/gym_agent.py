@@ -11,7 +11,7 @@ m.patch()
 
 AGENT_PARAMS_PATH = '/configs/agent_params.json'
 DUMMY_ACTION_DISCRETE=0
-DUMMY_ACTION_CONTINUOUS=[0.0, 0.0]
+DUMMY_ACTION_CONTINUOUS=[1.0, 1.0]
 try:
     GYM_PORT=int(os.environ['GYM_PORT'])
 except:

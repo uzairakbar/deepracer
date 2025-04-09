@@ -64,6 +64,9 @@ class DeepracerGymEnv(gym.Env):
         return observation, info
     
     def step(self, action: ActionType):
+        assert self.action_space.contains(action), \
+            f'Infeasible action. Action space does not containr {action}.'
+        
         observation, reward, terminated, truncated, info = (
             self.deepracer_gym_adapter.send_action(action)
         )
