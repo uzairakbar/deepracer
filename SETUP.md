@@ -41,8 +41,7 @@ sudo groupadd docker
 sudo usermod -aG docker $USER
 newgrp docker
 ```
-
-Test the installation.
+**Restart your system**, then test the installation.
 ```bash
 docker run hello-world
 ```

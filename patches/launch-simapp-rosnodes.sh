@@ -4,6 +4,11 @@ echo 'Use this script to launch a SageMaker training job.'
 
 RANDOM_STR="$RANDOM-$(date +%s)"
 
+echo '----------'
+echo "EVALUATION: $EVALUATION"
+echo "EVAL_WORLD_NAME: $EVAL_WORLD_NAME"
+echo '----------'
+
 if [ -z "$EVALUATION" ]; then
     WORLD_NAME=$(
         cat /configs/environment_params.yaml \
@@ -68,40 +73,6 @@ echo "Uploaded model_metadata to ${MODEL_METADATA_S3_SOURCE}"
 cp /configs/reward_function.py ${REWARD_FUNCTION_S3_SOURCE}
 echo "Uploaded reward function to ${REWARD_FUNCTION_S3_SOURCE}"
 
-export PATH="$HOME/.local/bin:$PATH"
-# handle continuous action spaces
-is_continuous=$(jq '
-# Function to determine if action space is continuous
-def is_action_space_continuous:
-  # Check if action_space_type is explicitly defined
-  if has("action_space_type") then
-    # Validate that the value is either "discrete" or "continuous"
-    if .action_space_type != "discrete" and .action_space_type != "continuous" then
-      error("Incorrectly defined action_space_type in config file.")
-    else
-      # Return true if continuous, false if discrete
-      .action_space_type == "continuous"
-    end
-  else
-    # Infer from action_space structure
-    if has("action_space") then
-      # Check if action_space is an array (discrete) or object (continuous)
-      if .action_space | type == "array" then
-        false  # discrete space
-      elif .action_space | type == "object" then
-        true   # continuous space
-      else
-        error("Incorrectly defined action_space in config file.")
-      end
-    else
-      error("Missing action_space in config file.")
-    end
-  end;
-
-# Call the function and output the result
-is_action_space_continuous
-' "${MODEL_METADATA_S3_SOURCE}")
-
 # generate local yaml file and then upload to S3 bucket for robomaker training
 DEFAULT_YAML="default_training_params.yaml"
 touch ${DEFAULT_YAML}
@@ -148,7 +119,7 @@ echo "ENABLE_DOMAIN_RANDOMIZATION:          \"false\"" | tee -a ${DEFAULT_YAML}
 echo "DISPLAY_NAME:                         \"LongLongRacerNameBlaBlaBla\"" | tee -a ${DEFAULT_YAML}
 echo "REVERSE_DIR:                          \"false\"" | tee -a ${DEFAULT_YAML}
 echo "BODY_SHELL_TYPE:                      \"deepracer\"" | tee -a ${DEFAULT_YAML}
-echo "IS_CONTINUOUS:                        \"${is_continuous}\"" | tee -a ${DEFAULT_YAML}
+echo "IS_CONTINUOUS:                        \"false\"" | tee -a ${DEFAULT_YAML}
 
 NUM_WORKERS=1
 echo "NUM_WORKERS:                          \"${NUM_WORKERS}\"" | tee -a ${DEFAULT_YAML}
