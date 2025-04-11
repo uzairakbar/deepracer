@@ -39,16 +39,6 @@ on_pace_ice() {
     fi
 }
 
-# install jq if not already present
-install_jq() {
-    if [[ -x "$HOME/.local/bin/jq" ]]; then
-        echo "jq already installed at $HOME/.local/bin/jq"
-    else
-        curl -s https://webinstall.dev/jq | bash
-        echo "jq installed at $HOME/.local/bin/jq"
-    fi
-}
-
 while getopts "C:M:E:W:" opt
 do
     case "$opt" in
@@ -101,9 +91,6 @@ if command_exists apptainer; then
 
     apptainer pull deepracer_base.sif docker://"$base"
 
-    # install jq -- does not seem to work inside .def file
-    install_jq
-
     yes no | apptainer build --ignore-fakeroot-command "$SCRATCH_DIR"/"$image".sif deepracer.def
 
     GYM_PORT=$(string_to_port "$USER")
@@ -126,13 +113,6 @@ if command_exists apptainer; then
         --env EVALUATION="$evaluation",EVAL_WORLD_NAME="$world_name",GYM_PORT="$GYM_PORT",GAZEBO_MASTER_URI="$GAZEBO_MASTER_URI",ROS_MASTER_URI="$ROS_MASTER_URI" \
         "$SCRATCH_DIR"/"$image".sif "$container" \
         --cpus="$cpus" --memory="$memory"
-    
-    # apptainer instance run \
-    #     --compact \
-    #     --workdir /tmp \
-    #     --bind configs:/configs \
-    #     "$image".sif "$container" \
-    #     --cpus="$cpus" --memory="$memory"
 
     echo "Started deepracer Apptainer container."
     

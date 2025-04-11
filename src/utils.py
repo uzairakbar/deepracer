@@ -233,8 +233,8 @@ def command_exists(command: str) -> bool:
 
 
 def run_command(command):
-    if command_exists('docker'):
-        command = ['sudo'] + command
+    # if command_exists('docker'):
+    #     command = ['sudo'] + command
     
     result=subprocess.run(
         command, capture_output=True, text=True

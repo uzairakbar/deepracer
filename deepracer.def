@@ -8,7 +8,7 @@ From: deepracer_base.sif
     ./patches/* /patches/
 
 %post
-    # install jq and yq
+    # install yq
     wget https://github.com/mikefarah/yq/releases/latest/download/yq_linux_amd64 -O /usr/bin/yq
     chmod +x /usr/bin/yq
 

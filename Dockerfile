@@ -9,8 +9,7 @@ RUN mkdir -p /logs/deepracer
 # copy over patch files
 COPY ./patches/* /patches
 
-# install jq and yq
-RUN sudo apt-get install jq --yes
+# install yq
 RUN wget https://github.com/mikefarah/yq/releases/latest/download/yq_linux_amd64 -O /usr/bin/yq &&\
     chmod +x /usr/bin/yq
 
