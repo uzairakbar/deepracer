@@ -64,7 +64,7 @@ fi
 if command_exists conda; then
 
     conda activate base
-    conda remove --name "$conda_env" --all --yes
+    conda remove --name "$conda_env" --all --yes --force
 
     echo "Cleaned deepracer Conda environment."
 fi

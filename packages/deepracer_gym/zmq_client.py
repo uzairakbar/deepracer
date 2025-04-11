@@ -7,8 +7,8 @@ m.patch()
 
 PORT: int=8888
 HOST: str='127.0.0.1'
-TIMEOUT_LONG: int=300_000   # 5m
-TIMEOUT_SHORT: int=60_000   # 1m
+TIMEOUT_LONG: int=500_000   # ~8.3 m
+TIMEOUT_SHORT: int=100_000  # ~1.7 m
 
 
 class DeepracerClientZMQ:

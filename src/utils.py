@@ -232,10 +232,7 @@ def command_exists(command: str) -> bool:
     return shutil.which(command) is not None
 
 
-def run_command(command):
-    if command_exists('docker'):
-        command = ['sudo'] + command
-    
+def run_command(command):    
     result=subprocess.run(
         command, capture_output=True, text=True
     )
@@ -265,8 +262,8 @@ def evaluate_track(
     run_command([
         '/bin/bash',
         './scripts/restart_deepracer.sh',
-        '-E=true',              # evaluation mode
-        f'-W={world_name}',     # specify WORLD_NAME
+        '-E', 'true',           # evaluation mode
+        '-W', world_name,       # specify WORLD_NAME
     ])
 
     eval_device = torch.device('cpu')
