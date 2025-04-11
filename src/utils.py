@@ -232,10 +232,7 @@ def command_exists(command: str) -> bool:
     return shutil.which(command) is not None
 
 
-def run_command(command):
-    # if command_exists('docker'):
-    #     command = ['sudo'] + command
-    
+def run_command(command):    
     result=subprocess.run(
         command, capture_output=True, text=True
     )
