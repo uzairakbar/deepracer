@@ -34,12 +34,6 @@ From: deepracer_base.sif
     replace="agent.observe(response(agent, self.environment, env_response))"
     sed -i -e "s|$pattern|$replace|g" "$file_path"
 
-    # handle continuous action spaces
-    file_path='/opt/amazon/install/sagemaker_rl_agent/lib/python3.6/site-packages/markov/rollout_worker.py'
-    pattern='ConfigParams.NUMBER_OF_TRIALS.value: None'
-    replace='ConfigParams.NUMBER_OF_TRIALS.value: None if rospy.get_param("IS_CONTINUOUS", None) is None else 1'
-    sed -i -e "s|$pattern|$replace|g" "$file_path"
-
     # turn off kinesis video stream
     file_path='/opt/amazon/install/deepracer_simulation_environment/share/deepracer_simulation_environment/launch/rollout_rl_agent.launch'
     pattern='name="publish_to_kinesis_stream" default="true"'
@@ -59,4 +53,4 @@ From: deepracer_base.sif
     
 %runscript
     cd /opt/ml/code/
-    exec /bin/bash /opt/ml/code/entrypoint.sh "$@" | tee /tmp/app_logs.txt
+    exec /bin/bash /opt/ml/code/entrypoint.sh "$@"

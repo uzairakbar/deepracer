@@ -35,12 +35,6 @@ RUN file_path='/opt/amazon/install/sagemaker_rl_agent/lib/python3.6/site-package
     replace="agent.observe(response(agent, self.environment, env_response))" && \
     sed -i -e "s|$pattern|$replace|g" "$file_path"
 
-# handle continuous action spaces
-RUN file_path='/opt/amazon/install/sagemaker_rl_agent/lib/python3.6/site-packages/markov/rollout_worker.py' && \
-    pattern='ConfigParams.NUMBER_OF_TRIALS.value: None' && \
-    replace='ConfigParams.NUMBER_OF_TRIALS.value: None if rospy.get_param("IS_CONTINUOUS", None) is None else 1' && \
-    sed -i -e "s|$pattern|$replace|g" "$file_path"
-
 # turn off kinesis video stream
 RUN file_path='/opt/amazon/install/deepracer_simulation_environment/share/deepracer_simulation_environment/launch/rollout_rl_agent.launch' && \
     pattern='name="publish_to_kinesis_stream" default="true"' && \
