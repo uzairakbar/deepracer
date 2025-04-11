@@ -1,5 +1,6 @@
 #!/bin/bash
 
+
 helpFunction()
 {
     echo ""
@@ -9,10 +10,24 @@ helpFunction()
     exit 1 # Exit script after printing help
 }
 
+
 # check if a command exists
 command_exists() {
     command -v "$1" >/dev/null 2>&1
 }
+
+
+docker_image_exists() {
+    local image="$1"
+    if docker image inspect "$image" > /dev/null 2>&1; then
+        echo "Image '$image' exists."
+        return 0
+    else
+        echo "Image '$image' does not exist."
+        return 1
+    fi
+}
+
 
 # calculate unique(-ish) port number
 string_to_port() {
@@ -29,6 +44,7 @@ string_to_port() {
   echo $((1024 + (hash_int % port_range)))
 }
 
+
 # check if on a PACE ICE machine
 on_pace_ice() {
     local var="$1"
@@ -38,6 +54,7 @@ on_pace_ice() {
         return 1  # Failure (does not match)
     fi
 }
+
 
 while getopts "C:M:E:W:" opt
 do
@@ -49,6 +66,7 @@ do
         ? ) helpFunction ;; # print helpFunction in case parameter is non-existent
     esac
 done
+
 
 # assign default if empty
 if [ -z "$cpus" ] || [ -z "$memory" ]
@@ -67,6 +85,7 @@ mkdir -p "$patches"
 export base=uzairakbar/deepracer:v0
 export container=deepracer
 export image=deepracer
+
 
 SCRATCH_DIR=''
 if on_pace_ice "$HOSTNAME"; then
@@ -120,10 +139,24 @@ if command_exists apptainer; then
 elif command_exists docker; then
     echo "Building deepracer Docker container."
     
-    docker pull "$base"
-    docker build -t "$image" .
+    # pull base image
+    if docker_image_exists "$base"; then
+        echo "Docker image '$base' already exists. Skipping pull."
+    else
+        echo "Docker image '$base' not found. Pulling now..."
+        docker pull "$base"
+    fi
 
-    docker system prune --force
+    # build P4 deepracer image
+    if docker_image_exists "${image}:latest"; then
+        echo "Docker image '$image' already exists. Skipping build."
+    else
+        echo "Docker image '$image' not found. Building now..."
+        docker build -t "$image" .
+        
+        # prune just in case of dangling images
+        docker system prune --force
+    fi
 
     echo "Using port 8888 for deepracer."
 
