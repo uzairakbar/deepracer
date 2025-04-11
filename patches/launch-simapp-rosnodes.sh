@@ -4,6 +4,11 @@ echo 'Use this script to launch a SageMaker training job.'
 
 RANDOM_STR="$RANDOM-$(date +%s)"
 
+echo '----------'
+echo "EVALUATION: $EVALUATION"
+echo "EVAL_WORLD_NAME: $EVAL_WORLD_NAME"
+echo '----------'
+
 if [ -z "$EVALUATION" ]; then
     WORLD_NAME=$(
         cat /configs/environment_params.yaml \

@@ -265,8 +265,8 @@ def evaluate_track(
     run_command([
         '/bin/bash',
         './scripts/restart_deepracer.sh',
-        '-E=true',              # evaluation mode
-        f'-W={world_name}',     # specify WORLD_NAME
+        '-E', 'true',           # evaluation mode
+        '-W', world_name,       # specify WORLD_NAME
     ])
 
     eval_device = torch.device('cpu')
