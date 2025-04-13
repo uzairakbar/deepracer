@@ -160,7 +160,7 @@ elif command_exists docker; then
 
     echo "Using port 8888 for deepracer."
 
-    docker run --rm --detach \
+    docker run --detach \
         --name="$container" \
         -v "$PWD"/"$configs":/"$configs":ro \
         -p 8888:8888 \
