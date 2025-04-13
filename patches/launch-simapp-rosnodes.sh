@@ -180,8 +180,13 @@ if which x11vnc &>/dev/null; then
     source /opt/ros/$ROS_DISTRO/setup.bash
     source /opt/amazon/install/setup.bash
     export GAZEBO_MODEL_PATH='/opt/amazon/install/deepracer_simulation_environment/share/deepracer_simulation_environment'
-    Xvfb :99 -ac -screen 0 1400x900x24 &
-    export DISPLAY=:99  # Select screen 99 by default.
+    
+    # select random display to avoid conflicts
+    # check which one is free with: ps aux | grep X
+    export DISPLAY=":$(( RANDOM % 99 + 1 ))"
+    Xvfb $DISPLAY -ac -screen 0 1400x900x24 &
+    echo "Using DISPLAY=$DISPLAY"
+    
     echo "Running simulation job on single sagemaker instance..."
     echo "Check ${SIMULATION_LOG_GROUP} and ${TRAINING_LOG_GROUP} for training and simulation logs."
     # redirect stderr to stdout and have error messages sent to the same file as standard output
