@@ -160,6 +160,7 @@ IFS=' '
 read -a IPS_ADDRESS_LIST <<< "$IP_ADDRESSES"
 unset IFS
 export ROS_IP=${IPS_ADDRESS_LIST[0]}
+echo "Using ROS IP ${ROS_IP}"
 
 unset KINESIS_VIDEO_STREAM_NAME
 
@@ -186,8 +187,8 @@ if which x11vnc &>/dev/null; then
     # select random display to avoid conflicts
     # check which one is free with: ps aux | grep X
     export DISPLAY=":$(( RANDOM % 99 + 1 ))"
-    Xvfb $DISPLAY -ac -screen 0 1400x900x24 &
-    echo "Using DISPLAY=$DISPLAY"
+    Xvfb "$DISPLAY" -ac -screen 0 1400x900x24 &
+    echo "Using DISPLAY=${DISPLAY}"
     
     echo "Running simulation job on single sagemaker instance..."
     echo "Check ${SIMULATION_LOG_GROUP} and ${TRAINING_LOG_GROUP} for training and simulation logs."
