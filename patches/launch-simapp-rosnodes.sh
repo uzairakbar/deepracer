@@ -120,6 +120,7 @@ echo "DISPLAY_NAME:                         \"LongLongRacerNameBlaBlaBla\"" | te
 echo "REVERSE_DIR:                          \"false\"" | tee -a ${DEFAULT_YAML}
 echo "BODY_SHELL_TYPE:                      \"deepracer\"" | tee -a ${DEFAULT_YAML}
 echo "IS_CONTINUOUS:                        \"false\"" | tee -a ${DEFAULT_YAML}
+echo "LEADERBOARD_NAME:                     \"cs7642\"" | tee -a ${DEFAULT_YAML}
 
 NUM_WORKERS=1
 echo "NUM_WORKERS:                          \"${NUM_WORKERS}\"" | tee -a ${DEFAULT_YAML}
@@ -159,7 +160,9 @@ IFS=' '
 read -a IPS_ADDRESS_LIST <<< "$IP_ADDRESSES"
 unset IFS
 export ROS_IP=${IPS_ADDRESS_LIST[0]}
+echo "Using ROS IP ${ROS_IP}"
 
+unset KINESIS_VIDEO_STREAM_NAME
 
 export APP_REGION=${AWS_REGION}
 export MODEL_S3_BUCKET=${S3_BUCKET}
@@ -180,10 +183,15 @@ if which x11vnc &>/dev/null; then
     source /opt/ros/$ROS_DISTRO/setup.bash
     source /opt/amazon/install/setup.bash
     export GAZEBO_MODEL_PATH='/opt/amazon/install/deepracer_simulation_environment/share/deepracer_simulation_environment'
-    Xvfb :99 -ac -screen 0 1400x900x24 &
-    export DISPLAY=:99  # Select screen 99 by default.
+    
+    # select random display to avoid conflicts
+    # check which one is free with: ps aux | grep X
+    export DISPLAY=":$(( RANDOM % 99 + 1 ))"
+    Xvfb "$DISPLAY" -ac -screen 0 1400x900x24 &
+    echo "Using DISPLAY=${DISPLAY}"
+    
     echo "Running simulation job on single sagemaker instance..."
     echo "Check ${SIMULATION_LOG_GROUP} and ${TRAINING_LOG_GROUP} for training and simulation logs."
     # redirect stderr to stdout and have error messages sent to the same file as standard output
-    roslaunch deepracer_simulation_environment $SIMULATION_LAUNCH_FILE
+    roslaunch deepracer_simulation_environment $SIMULATION_LAUNCH_FILE publish_to_kinesis_stream:=false
 fi
