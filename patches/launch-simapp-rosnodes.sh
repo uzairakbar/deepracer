@@ -120,6 +120,7 @@ echo "DISPLAY_NAME:                         \"LongLongRacerNameBlaBlaBla\"" | te
 echo "REVERSE_DIR:                          \"false\"" | tee -a ${DEFAULT_YAML}
 echo "BODY_SHELL_TYPE:                      \"deepracer\"" | tee -a ${DEFAULT_YAML}
 echo "IS_CONTINUOUS:                        \"false\"" | tee -a ${DEFAULT_YAML}
+echo "LEADERBOARD_NAME:                     \"cs7642\"" | tee -a ${DEFAULT_YAML}
 
 NUM_WORKERS=1
 echo "NUM_WORKERS:                          \"${NUM_WORKERS}\"" | tee -a ${DEFAULT_YAML}
@@ -160,6 +161,7 @@ read -a IPS_ADDRESS_LIST <<< "$IP_ADDRESSES"
 unset IFS
 export ROS_IP=${IPS_ADDRESS_LIST[0]}
 
+unset KINESIS_VIDEO_STREAM_NAME
 
 export APP_REGION=${AWS_REGION}
 export MODEL_S3_BUCKET=${S3_BUCKET}
@@ -190,5 +192,5 @@ if which x11vnc &>/dev/null; then
     echo "Running simulation job on single sagemaker instance..."
     echo "Check ${SIMULATION_LOG_GROUP} and ${TRAINING_LOG_GROUP} for training and simulation logs."
     # redirect stderr to stdout and have error messages sent to the same file as standard output
-    roslaunch deepracer_simulation_environment $SIMULATION_LAUNCH_FILE
+    roslaunch deepracer_simulation_environment $SIMULATION_LAUNCH_FILE publish_to_kinesis_stream:=false
 fi

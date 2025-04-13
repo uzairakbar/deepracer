@@ -35,9 +35,21 @@ RUN file_path='/opt/amazon/install/sagemaker_rl_agent/lib/python3.6/site-package
     sed -i -e "s|$pattern|$replace|g" "$file_path"
 
 # turn off kinesis video stream
+RUN file_path='/opt/amazon/src/deepracer_simulation_environment/scripts/download_params_and_roslaunch_agent.py' && \
+    pattern='"publish_to_kinesis_stream:={} ".format(not yaml_file.is_leaderboard_job)' && \
+    replace='"publish_to_kinesis_stream:=false "' && \
+    sed -i -e "s|$pattern|$replace|g" "$file_path"
+RUN file_path='/opt/amazon/install/deepracer_simulation_environment/lib/deepracer_simulation_environment/download_params_and_roslaunch_agent.py' && \
+    pattern='"publish_to_kinesis_stream:={} ".format(not yaml_file.is_leaderboard_job)' && \
+    replace='"publish_to_kinesis_stream:=false "' && \
+    sed -i -e "s|$pattern|$replace|g" "$file_path"
 RUN file_path='/opt/amazon/install/deepracer_simulation_environment/share/deepracer_simulation_environment/launch/rollout_rl_agent.launch' && \
     pattern='name="publish_to_kinesis_stream" default="true"' && \
     replace='name="publish_to_kinesis_stream" default="false"' && \
+    sed -i -e "s|$pattern|$replace|g" "$file_path"
+RUN file_path='/opt/amazon/install/deepracer_simulation_environment/share/deepracer_simulation_environment/launch/rollout_rl_agent.launch' && \
+    pattern='name="publish_to_kinesis_stream" value="$(arg publish_to_kinesis_stream)"' && \
+    replace='name="publish_to_kinesis_stream" value="false"' && \
     sed -i -e "s|$pattern|$replace|g" "$file_path"
 
 # patch gym agent
@@ -47,6 +59,9 @@ RUN mv -f /patches/gym_agent.py \
 # use customized launch script
 RUN mv -f /patches/launch-simapp-rosnodes.sh /opt/ml/code/
 RUN chmod +x /opt/ml/code/launch-simapp-rosnodes.sh
+
+# in case display is needed for kinesis
+RUN mkdir -p /tmp/.X11-unix && chmod 1777 /tmp/.X11-unix
 
 # set working directory
 WORKDIR /opt/ml/code/
