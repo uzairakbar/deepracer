@@ -52,6 +52,24 @@ RUN file_path='/opt/amazon/install/deepracer_simulation_environment/share/deepra
     replace='name="publish_to_kinesis_stream" value="false"' && \
     sed -i -e "s|$pattern|$replace|g" "$file_path"
 
+# adjust LIDAR sensor range
+RUN file1_path='/opt/amazon/markov/spawn/constants.py' && \
+    file2_path='/opt/amazon/install/sagemaker_rl_agent/lib/python3.6/site-packages/markov/spawn/constants.py' && \
+    pattern='LIDAR_360_DEGREE_MAX_RANGE = "0.5"' && \
+    replace='LIDAR_360_DEGREE_MAX_RANGE = "1.0"' && \
+    sed -i -e "s|$pattern|$replace|g" "$file1_path" "$file2_path"
+
+RUN file1_path='/opt/amazon/markov/environments/constants.py' && \
+    file2_path='/opt/amazon/install/sagemaker_rl_agent/lib/python3.6/site-packages/markov/environments/constants.py' && \
+    pattern='SECTOR_LIDAR_CLIPPING_DIST = 0.5' && \
+    replace='SECTOR_LIDAR_CLIPPING_DIST = 1.0' && \
+    sed -i -e "s|$pattern|$replace|g" "$file1_path" "$file2_path"
+
+RUN file_path='/opt/amazon/install/deepracer_simulation_environment/share/deepracer_simulation_environment/launch/racecar.launch' && \
+    pattern='<arg name="lidar_360_degree_max_range" default="0.5" />' && \
+    replace='<arg name="lidar_360_degree_max_range" default="1.0" />' && \
+    sed -i -e "s|$pattern|$replace|g" "$file_path"
+
 # patch gym agent
 RUN mv -f /patches/gym_agent.py \
     /opt/amazon/install/sagemaker_rl_agent/lib/python3.6/site-packages/markov/
