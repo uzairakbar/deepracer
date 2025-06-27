@@ -70,8 +70,8 @@ MODEL_METADATA_S3_SOURCE=/${S3_BUCKET}/${MODEL_METADATA_S3_KEY}
 
 cp /configs/agent_params.json ${MODEL_METADATA_S3_SOURCE}
 echo "Uploaded model_metadata to ${MODEL_METADATA_S3_SOURCE}"
-cp /configs/reward_function.py ${REWARD_FUNCTION_S3_SOURCE}
-echo "Uploaded reward function to ${REWARD_FUNCTION_S3_SOURCE}"
+cp /opt/ml/code/test_reward_function.py ${REWARD_FUNCTION_S3_SOURCE}
+echo "Uploaded dummy reward function to ${REWARD_FUNCTION_S3_SOURCE}"
 
 # generate local yaml file and then upload to S3 bucket for robomaker training
 DEFAULT_YAML="default_training_params.yaml"
