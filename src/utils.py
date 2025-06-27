@@ -359,7 +359,7 @@ def evaluate(
     eval_world_names = ([
         'reInvent2019_wide',    # A to Z Speedway
         'reInvent2019_track',   # Smile Speedway
-        'New_York_Track',       # Empire City Training
+        'Vegas_track',          # AWS Summit Raceway
     ])
     
     eval_device = torch.device('cpu')

@@ -2,9 +2,14 @@
 
 ## Dependencies
 
+### WSL Ubuntu (only for Windows)
+If using Windows, please install [WSL2 and Ubuntu](https://documentation.ubuntu.com/wsl/latest/howto/install-ubuntu-wsl2/).
+
+Also install either the [WSL extention](https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.remote-wsl) or [Remote Development extension](https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.vscode-remote-extensionpack) for VSCode to develop in WSL.
+
 ### Docker
 #### Windows
-Install the [Docker Desktop for Windows](https://docs.docker.com/desktop/setup/install/windows-install/).
+Install the [Docker Desktop for Windows](https://docs.docker.com/desktop/setup/install/windows-install/) and [configure it for WSL](https://docs.docker.com/desktop/features/wsl/).
 
 #### Linux (Ubuntu)
 Uninstall all conflicting packages.
@@ -48,8 +53,8 @@ docker run hello-world
 
 ### Conda
 #### Windows
-Install Miniconda from [here](https://www.anaconda.com/docs/getting-started/miniconda/install#windows-installation).
-#### Linux
+Same as below under WSL Ubuntu.
+#### Linux (Ubuntu)
 ```bash
 mkdir -p ~/miniconda3
 wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh -O ~/miniconda3/miniconda.sh
@@ -87,7 +92,7 @@ We recommend students to setup the project locally. However, in cases where that
 * Login to the [GeorgiaTech VPN Service](https://vpn.gatech.edu/global-protect/login.esp). Download and install the [GlobalProtecht VPN client](https://vpn.gatech.edu/global-protect/getsoftwarepage.esp).
 * Using the VPN client, connect to [vpn.gatech.edu](vpn.gatech.edu) and login via your GeorgiaTech username and password.
 * Connect to the PACE ICE on-demand service at [ondemand-ice.pace.gatech.edu](https://ondemand-ice.pace.gatech.edu/pun/sys/dashboard).
-* Click on 'My Interactive Sessions' and select whichever one you prefer on the 'Interactive Apps' meanu (we recommend VS Code).
+* Click on 'My Interactive Sessions' and select whichever one you prefer on the 'Interactive Apps' meanu (we recommend Coder or VS Code).
 
 ### Environment setup
 Please note that PACE ICE machines already come with Apptainer and Conda installed (use `module load anaconda3` or `module load mamba`). As such, you can follow the instructions from the [python environment section](#Python-environment) as is. However, we recommend the following additions:

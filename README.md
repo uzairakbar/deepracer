@@ -12,7 +12,7 @@ cd P4_deepracer
 This project requires the following to work.
 - Docker or Apptainer.
 - Conda (or Python 3.10 or higher).
-- Linux or Windows machine with an Intel CPU.
+- Linux or Windows machine with an **Intel CPU**.
 
 Please see the detailed setup instructions in [`SETUP.md`](https://github.gatech.edu/rldm/P4_deepracer/blob/main/SETUP.md).
 
