@@ -26,15 +26,21 @@ To check if the container is rumming you can use the following commands.
 docker ps -a            # if using Docker (local setup)
 apptainer instance list # if using Apptainer (PACE ICE)
 ```
-Note that the simulator is initialized by the config files in the `configs/` directory. To change the simulation settings, you have to stop the container, and start it back up after changing the files in `configs/` accordingly.
+**Note** that the simulator is initialized by the `agent_params.json` and `environment_params.yaml` config files in the `configs/` directory. To change the simulation settings, restart it after changing these files under the `configs/` directory.
 
 ### Interact with the environment
 ```python
 import gymnasium as gym
 import deepracer_gym
+from configs.reward_function import (
+    # provide your own custom reward function if needed.
+    # if not provided, gymnasium environment fetches it from configs.reward_function
+    reward_function
+)
 
 env = gym.make(
-    'deepracer-v0'
+    'deepracer-v0',
+    reward_function = reward_function
 )
 
 observation, info = env.reset()
@@ -42,6 +48,8 @@ observation, info = env.reset()
 observation, reward, terminated, truncated, info = env.step(
     env.action_space.sample()
 )
+
+env.close()
 ```
 The `terminated` flag is trigerred by the following in `info['episode_status']`.
 ```yaml
@@ -60,8 +68,6 @@ The `truncated` flag is trigerred by the following (not accessible in `info['rew
 }
 ```
 
-[^1]: However, the relationship may not be straightforward. For example, even if `crashed` is `True`, the `terminated` flag might not get trigerred if the collision object is moving faster than our racer such that an actual collision will not happen.
-
 For more details, see the [`gymnasium` API section](#gymnasium-API) below.
 
 ## Configuration
@@ -71,7 +77,7 @@ The `configs/reward_function.py` file defines the reward function which accepts 
 To get motivation for designing reward functions for different types of races, please take a look at the [AWS DeepRacer reward function examples](https://docs.aws.amazon.com/deepracer/latest/developerguide/deepracer-reward-function-examples.html).
 
 ### Agent parameters
-The `configs/agent_params.json` configuration file defines the agent's action and observation space. The only settings of relevance are the following[^2]:.
+The `configs/agent_params.json` configuration file defines the agent's action and observation space. The only settings of relevance are the following[^1]:.
 | Parameter | Description |
 |---|---|
 | `action_space_type` | Can be `discrete` or `continuous`. |
@@ -132,7 +138,7 @@ We provide two examples below:
 }
 ```
 
-[^2]: Please donot change the `neural_network` and `version` variables.
+[^1]: Please donot change the `neural_network` and `version` variables.
 
 ### Environment parameters
 The `configs/environment_params.yaml` configuration file is used to define the environment. See the [DeepRacer-for-cloud documentation](https://aws-deepracer-community.github.io/deepracer-for-cloud/reference.html) for the description of these parameters.
@@ -220,12 +226,14 @@ The observation space is a composotive space defined by a [`gymnasium.spaces.Dic
 ```
 
 ### Action Space
-Depending on the specification in `configs/agent_params.json`, the actions space can be the following.
+Depending on the specification in `configs/agent_params.json`, the actions space can be the following. Note that for continuous action spaces, the input is normalized between -1 and 1 representing the `low` and `high` values of the respective quantity.
 
 | Type | `gymnasium.spaces` object |
 |---|---|
 | Discrete | `Discrete(n)`, where `n` is 5 for [the example above](#discrete-actions-with-lidar--stereo-camera). |
-| Continuous | `Box(-1, 1, shape=(n,))`, where `n` is 2 for [the example above](#continuous-actions-with-lidar--front-facing-camera). |
+| Continuous[^2] | `Box(-1, 1, shape=(n,))`, where `n` is 2 for [the example above](#continuous-actions-with-lidar--front-facing-camera). |
+
+[^2]: For continuous action spaces, the `steering_angle` and `speed` occupy the 1st and 2nd indices of the 2D action vector/list as `[normalized_steering_angle, normalized_speed]`.
 
 ### Environment Step
 ```python
@@ -266,6 +274,5 @@ env = gym.make('deepracer-v0', render_mode='rgb_array')
 ## Limitations, Problems and Troubleshooting
 - Due to simulation limitations, the `deepracer-v0` environment **does NOT support** [environment vectorization](https://gymnasium.farama.org/api/vector/). This includes `gymnasium.vector.SyncVectorEnv`, which has to be run with a maximum of `num_envs=1`.
 - If Docker does not work for you without `sudo`, please follow the instructions in [`README.md`](https://github.gatech.edu/rldm/P4_deepracer/blob/main/SETUP.md) to add it to `sudo` group.
-- Please note that the first run of `scripts/start_deepracer.sh` can be quite slow. This is because the simulator base image is downloaded (~12 GBs), built with P4 specific patches before being started. But this should be a one-time process and subsequent runs should be relatively quicker.
+- Please note that the first run of `scripts/start_deepracer.sh` or `scripts/restart_deepracer.sh` can be quite slow. This is because the simulator base image is downloaded (~12 GBs), built with P4 specific patches before being started. But this should be a one-time process and subsequent runs should be relatively quicker.
 - We have tried to deligently test the simulator and various configurations for this project. However, it is entirely possible that some edge-cases may have gone overlooked due to limited time-constraints. Should you encounter such an edge case, please feel free to hop into an OH or reach out to a TA to get it fixed ASAP.
-- The continuous actions spaces configurations, althought working, are not as well tested as the discrete action space configurations. Please keep this in mind when attempting your solution.
