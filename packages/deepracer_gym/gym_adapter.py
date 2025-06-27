@@ -73,7 +73,7 @@ class DeepracerGymAdapter:
                 self.response['info']['reward_params']['steps']
             )
 
-        observation, _, _, _, info = self._parse_response(self.response)
+        observation, _, _, info = self._parse_response(self.response)
         return observation, info
     
     def send_action(self, action: ActionType):
@@ -93,7 +93,6 @@ class DeepracerGymAdapter:
         terminated = terminated_check(info['episode_status'], game_over)
         truncated = truncated_check(info['episode_status'], game_over)
         
-        reward = response['_reward']
         observation = response['_next_state']
         # channel first convention
         observation = {
@@ -103,4 +102,4 @@ class DeepracerGymAdapter:
             ) for sensor, measurement in observation.items()
         }
 
-        return observation, reward, terminated, truncated, info
+        return observation, terminated, truncated, info

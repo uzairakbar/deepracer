@@ -1,10 +1,9 @@
 import os
-import platform
 import numpy as np
 import gymnasium as gym
 from loguru import logger
 from gymnasium import spaces
-from typing import TypeAlias
+from typing import TypeAlias, Callable
 import matplotlib.pyplot as plt
 
 from deepracer_gym.gym_adapter import DeepracerGymAdapter
@@ -14,6 +13,9 @@ from deepracer_gym.envs.utils import (
     num_channels,
     string_to_port,
     get_host_name
+)
+from configs.reward_function import (
+    reward_function as DEFAULT_REWARD_FUNCTION
 )
 
 
@@ -40,6 +42,7 @@ class DeepracerGymEnv(gym.Env):
             host: str=HOST,
             port: int=port,
             render_mode: str='rgb_array',
+            reward_function: Callable=DEFAULT_REWARD_FUNCTION,
             **kwargs
         ):
         super().__init__(**kwargs)
@@ -49,6 +52,7 @@ class DeepracerGymEnv(gym.Env):
         self.render_mode = render_mode
         self.action_space, self._action_metadata = make_action_space()
         self.observation_space, self._observation_metadata = make_observation_space()
+        self.reward_function = reward_function
         
         if isinstance(self.action_space, spaces.Discrete):
             action_space_type='discrete'
@@ -67,13 +71,14 @@ class DeepracerGymEnv(gym.Env):
         assert self.action_space.contains(action), \
             f'Infeasible action. Action space does not containr {action}.'
         
-        observation, reward, terminated, truncated, info = (
+        observation, terminated, truncated, info = (
             self.deepracer_gym_adapter.send_action(action)
         )
+        reward = self.reward_function(info['reward_params'])
         return observation, reward, terminated, truncated, info
     
     def render(self, mode='rgb_array'):
-        observation, _, _, _, _ = self.deepracer_gym_adapter._parse_response(
+        observation, _, _, _ = self.deepracer_gym_adapter._parse_response(
             self.deepracer_gym_adapter.response
         )
         measurement = None
