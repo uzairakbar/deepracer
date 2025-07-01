@@ -18,6 +18,9 @@ From the root of this repository, start the simulator container with the followi
 source scripts/start_deepracer.sh \
     [-C=MAX_CPU; default="3"] \
     [-M=MAX_MEMORY; default="6g"]
+
+# example:
+# source scripts/start_deepracer.sh -C "3" -M "6g"
 ```
 You may also find other scripts under `scripts/` similarly useful to stop or restart the simulation service, etc.
 

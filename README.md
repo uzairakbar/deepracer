@@ -23,6 +23,9 @@ Launch the DeepRacer simulation.
 source scripts/start_deepracer.sh \
     [-C=MAX_CPU; default="3"] \
     [-M=MAX_MEMORY; default="6g"]
+
+# example:
+# source scripts/start_deepracer.sh -C "3" -M "6g"
 ```
 
 Interact with the environment via `gymnasium`.
