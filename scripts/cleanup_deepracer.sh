@@ -15,8 +15,6 @@ on_pace_ice() {
     fi
 }
 
-export conda_env=deepracer
-
 export base=uzairakbar/deepracer:v0
 export container=deepracer
 export image=deepracer
@@ -24,15 +22,6 @@ export image=deepracer
 SCRATCH_DIR=''
 if on_pace_ice "$HOSTNAME"; then
     SCRATCH_DIR="$HOME"/scratch
-    
-    # if [ -L "$HOME"/.conda ]; then
-    #     echo "Conda already in scratch directory."
-    # else
-    #     mv "$HOME"/.conda "$SCRATCH_DIR"/.conda
-    #     ln "$HOME"/.conda "$SCRATCH_DIR"/.conda
-    #     echo "Moved conda to scratch directory."
-    # fi
-    
 else
     SCRATCH_DIR="$PWD"
 fi
@@ -60,13 +49,25 @@ elif command_exists docker; then
     echo "Cleaned deepracer Docker environment."
 fi
 
-# check for Conda
-if command_exists conda; then
+# check for UV
+if command_exists uv; then
+    
+    # remove local venv
+    if [ -d ".venv" ] || [ -L ".venv" ]; then
+        rm -rf .venv
+    fi
+    
+    # remove the scratch dir in PACE
+    if [ -d "$SCRATCH_DIR/uv_envs/deepracer" ]; then
+        rm -rf "$SCRATCH_DIR/uv_envs/deepracer"
+    fi
+    
+    # remove lockfile for fresh builds next time
+    if [ -f "uv.lock" ]; then
+        rm uv.lock
+    fi
 
-    conda activate base
-    conda remove --name "$conda_env" --all --yes --force
-
-    echo "Cleaned deepracer Conda environment."
+    echo "Cleaned deepracer UV environment."
 fi
 
 # no environment found to clean

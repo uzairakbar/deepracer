@@ -89,16 +89,7 @@ export image=deepracer
 
 SCRATCH_DIR=''
 if on_pace_ice "$HOSTNAME"; then
-    SCRATCH_DIR="$HOME"/scratch
-    
-    # if [ -L "$HOME"/.conda ]; then
-    #     echo "Conda already in scratch directory."
-    # else
-    #     mv "$HOME"/.conda "$SCRATCH_DIR"/.conda
-    #     ln "$HOME"/.conda "$SCRATCH_DIR"/.conda
-    #     echo "Moved conda to scratch directory."
-    # fi
-    
+    SCRATCH_DIR="$HOME"/scratch    
 else
     SCRATCH_DIR="$PWD"
 fi
