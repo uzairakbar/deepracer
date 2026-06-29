@@ -7,7 +7,7 @@ RUN mkdir -p /configs
 RUN mkdir -p /logs/deepracer
 
 # copy over patch files
-COPY ./patches/* /patches
+COPY ./patches/* /patches/
 
 # install yq
 RUN wget https://github.com/mikefarah/yq/releases/latest/download/yq_linux_amd64 -O /usr/bin/yq &&\
