@@ -5,11 +5,23 @@
 ### WSL Ubuntu (only for Windows)
 If using Windows, please install [WSL2 and Ubuntu](https://documentation.ubuntu.com/wsl/latest/howto/install-ubuntu-wsl2/).
 
-Also install either the [WSL extention](https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.remote-wsl) or [Remote Development extension](https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.vscode-remote-extensionpack) for VSCode to develop in WSL.
+Also install either the [WSL extension](https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.remote-wsl) or [Remote Development extension](https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.vscode-remote-extensionpack) for VSCode to develop in WSL.
+
+### Colima + Rosetta (only for Mac w/ Apple Silicon)
+
+```bash
+brew install colima
+softwareupdate --install-rosetta --agree-to-license
+```
 
 ### Docker
 #### Windows
 Install the [Docker Desktop for Windows](https://docs.docker.com/desktop/setup/install/windows-install/) and [configure it for WSL](https://docs.docker.com/desktop/features/wsl/).
+
+#### Mac
+```bash
+brew install docker
+```
 
 #### Linux (Ubuntu)
 Uninstall all conflicting packages.
@@ -90,3 +102,14 @@ We recommend students to setup the project locally. However, in cases where that
 
 ### Environment setup
 Please note that PACE ICE machines already come with Apptainer and UV installed (use `module load uv`). As such, you do not need Docker, and can follow the instructions from the [python environment section](#Python-environment) exactly as written.
+
+**Note:** PACE sessions may assign you a different CUDA version (12 vs. 13) than your previous session. If PyTorch throws a CUDA version error, you can simply do a hot-swap:
+```bash
+module load uv
+uv pip install -e . --torch-backend auto --upgrade-package torch
+```
+If this doesn't fix things, then do a full clean slate and [re-build the python environment](#Python-environment):
+```bash
+source scripts/cleanup_deepracer.sh
+# Then follow the standard Python environment setup steps again
+```
