@@ -24,10 +24,6 @@ dependencies = [
     "deepracer_gym"
 ]
 
-[tool.uv]
-# auto-detect MPS, CUDA, or CPU
-torch-backend = "auto"
-
 [tool.uv.sources]
 # install the local deepracer_gym package in editable mode
 deepracer_gym = { path = "packages/.", editable = true }

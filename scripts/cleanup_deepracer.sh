@@ -61,10 +61,15 @@ if command_exists uv; then
     if [ -d "$SCRATCH_DIR/uv_envs/deepracer" ]; then
         rm -rf "$SCRATCH_DIR/uv_envs/deepracer"
     fi
-    
-    # remove lockfile for fresh builds next time
+
+    # clear the uv cache
+    if [ -d "$SCRATCH_DIR/.cache/uv" ]; then
+        rm -rf "$SCRATCH_DIR/.cache/uv"
+    fi
+
+    # delete lockfile for fresh re-builds
     if [ -f "uv.lock" ]; then
-        rm uv.lock
+        rm -f uv.lock
     fi
 
     echo "Cleaned deepracer UV environment."
