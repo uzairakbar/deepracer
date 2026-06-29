@@ -1,0 +1,29 @@
+[project]
+name = "deepracer"
+version = "0.1.0"
+requires-python = ">=3.12,<3.13"
+dependencies = [
+    "numpy==2.2.4",
+    "matplotlib==3.10.1",
+    "seaborn",
+    "torch",
+    "loguru==0.7.3",
+    "standard-imghdr==3.13.0",
+    "tensorboard>=2.4.1",
+    "munch==4.0.0",
+    "gymnasium==1.1.1",
+    "moviepy==2.1.2",
+    "pyzmq==26.3.0",
+    "msgpack==1.1.0",
+    "msgpack_numpy==0.4.8",
+    "enlighten==1.14.1",
+    "scikit-image==0.25.2",
+    "jupyter==1.1.1",
+    "jupyterlab==4.3.6",
+    "ipykernel",
+    "deepracer_gym"
+]
+
+[tool.uv.sources]
+# install the local deepracer_gym package in editable mode
+deepracer_gym = { path = "packages/.", editable = true }
