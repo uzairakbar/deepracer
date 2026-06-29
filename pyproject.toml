@@ -24,6 +24,9 @@ dependencies = [
     "deepracer_gym"
 ]
 
+[tool.uv.pip]
+torch-backend = "auto"
+
 [tool.uv.sources]
 # install the local deepracer_gym package in editable mode
 deepracer_gym = { path = "packages/.", editable = true }
