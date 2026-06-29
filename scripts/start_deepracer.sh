@@ -45,6 +45,12 @@ string_to_port() {
 }
 
 
+# check if on Mac OS
+on_macos() {
+    [[ "$(uname)" == "Darwin" ]]
+}
+
+
 # check if on a PACE ICE machine
 on_pace_ice() {
     local var="$1"
@@ -129,6 +135,20 @@ if command_exists apptainer; then
 # check for Docker
 elif command_exists docker; then
     echo "Building deepracer Docker container."
+
+    # emulate amd64 for macOS / apple silicon
+    if on_macos; then
+        # use the amd64 Docker images (required for ROS/Gazebo)
+        export DOCKER_DEFAULT_PLATFORM=linux/amd64
+        
+        # run Colima with Rosetta enabled for amd64 emulation
+        if command_exists colima && ! colima status >/dev/null 2>&1; then
+            echo "Colima is not running. Starting Colima with Rosetta (amd64 emulation)..."
+            colima start --arch aarch64 --vm-type vz --vz-rosetta --mount-type virtiofs --cpu 4 --memory 8 --disk 80
+        elif command_exists colima; then
+            echo "Colima is running."
+        fi
+    fi
     
     # pull base image
     if docker_image_exists "$base"; then
