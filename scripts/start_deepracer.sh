@@ -136,12 +136,8 @@ if command_exists apptainer; then
 elif command_exists docker; then
     echo "Building deepracer Docker container."
 
-    # emulate amd64 for macOS / apple silicon
+    # emulate amd64 with Colima + Rosetta for macOS / apple silicon
     if on_macos; then
-        # use the amd64 Docker images (required for ROS/Gazebo)
-        export DOCKER_DEFAULT_PLATFORM=linux/amd64
-        
-        # run Colima with Rosetta enabled for amd64 emulation
         if command_exists colima && ! colima status >/dev/null 2>&1; then
             echo "Colima is not running. Starting Colima with Rosetta (amd64 emulation)..."
             colima start --arch aarch64 --vm-type vz --vz-rosetta --mount-type virtiofs --cpu 4 --memory 8 --disk 80
@@ -155,7 +151,7 @@ elif command_exists docker; then
         echo "Docker image '$base' already exists. Skipping pull."
     else
         echo "Docker image '$base' not found. Pulling now..."
-        docker pull "$base"
+        docker pull --platform linux/amd64 "$base"
     fi
 
     # build P4 deepracer image
@@ -163,7 +159,7 @@ elif command_exists docker; then
         echo "Docker image '$image' already exists. Skipping build."
     else
         echo "Docker image '$image' not found. Building now..."
-        docker build -t "$image" .
+        docker build --platform linux/amd64 -t "$image" .
         
         # prune just in case of dangling images
         docker system prune --force
@@ -171,7 +167,8 @@ elif command_exists docker; then
 
     echo "Using port 8888 for deepracer."
 
-    docker run --rm --detach \
+    docker run --platform linux/amd64 \
+        --rm --detach \
         --name="$container" \
         -v "$PWD"/"$configs":/"$configs":ro \
         -p 8888:8888 \
