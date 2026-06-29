@@ -88,7 +88,7 @@ export image=deepracer
 
 
 SCRATCH_DIR=''
-if on_pace_ice "$HOSTNAME"; then
+if on_pace_ice "$(hostname)"; then
     SCRATCH_DIR="$HOME"/scratch    
 else
     SCRATCH_DIR="$PWD"
