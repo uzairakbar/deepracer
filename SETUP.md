@@ -85,7 +85,7 @@ if [[ "$(hostname)" == *"pace.gatech.edu"* ]]; then
     fi
 fi
 uv venv
-uv pip install -e . --torch-backend auto
+uv pip install .
 ```
 To run your scripts using the virtual environment, use:
 ```bash
@@ -106,7 +106,8 @@ Please note that PACE ICE machines already come with Apptainer and UV installed 
 **Note:** PACE sessions may assign you a different CUDA version (12 vs. 13) than your previous session. If PyTorch throws a CUDA version error, you can simply do a hot-swap:
 ```bash
 module load uv
-uv pip install -e . --torch-backend auto --upgrade-package torch
+export UV_CACHE_DIR="$HOME/scratch/.cache/uv"
+uv pip install . --upgrade-package torch
 ```
 If this doesn't fix things, then do a full clean slate and [re-build the python environment](#Python-environment):
 ```bash
