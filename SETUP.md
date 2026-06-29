@@ -51,62 +51,42 @@ newgrp docker
 docker run hello-world
 ```
 
-### Conda
-#### Windows
-Same as below under WSL Ubuntu.
-#### Linux (Ubuntu)
+### UV
+For Mac/ Linux/ Windows (under WSL Ubuntu):
 ```bash
-mkdir -p ~/miniconda3
-wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh -O ~/miniconda3/miniconda.sh
-bash ~/miniconda3/miniconda.sh -b -u -p ~/miniconda3
-rm ~/miniconda3/miniconda.sh
-source ~/miniconda3/bin/activate
-conda init --all
+curl -LsSf https://astral.sh/uv/install.sh | sh
 ```
 
 ## Python environment
-We can use either a python `venv` or a conda environment (recommended) for this project. Instructions for both are given below.
-
-### PyTorch
-If you would like to install the GPU version of PyTorch, go to the [official PyTorch install page](https://pytorch.org/get-started/locally/) and select your system with the `pip` option. Then copy the `--index-url` value into `requirements.txt` (if none present, remove it from `requirements.txt` as well).
-
-### Conda environment (recommended)
+Make a virtual environment with dependencies installed:
 ```bash
-conda env create -f environment.yaml
-conda activate deepracer
+if [[ "$(hostname)" == *"pace.gatech.edu"* ]]; then
+    # load uv
+    module load uv
+    # use scratch directory on PACE for quota compliance
+    export UV_CACHE_DIR="$HOME/scratch/.cache/uv"
+    export UV_PROJECT_ENVIRONMENT="$HOME/scratch/uv_envs/deepracer"
+    mkdir -p "$HOME/scratch/uv_envs"
+    # create a local shortcut
+    if [ ! -e .venv ]; then
+        ln -s $UV_PROJECT_ENVIRONMENT .venv
+    fi
+fi
+uv venv
+uv pip install -e . --torch-backend auto
 ```
-
-### Python `venv`
-Python version 3.10 or above is required.
+To run your scripts using the virtual environment, use:
 ```bash
-environment='.deepracer'
-python -m venv "$environment"
-"$environment"/bin/python -m pip install -r requirements.txt
-"$environment"/bin/python -m pip install -e ./packages/
-source "$environment"/bin/activate
+uv run python src/run.py
 ```
 
 ## PACE ICE
 We recommend students to setup the project locally. However, in cases where that may not be possible, students can explore the following PACE ICE remote compute services.
 
-* Login to the [GeorgiaTech VPN Service](https://vpn.gatech.edu/global-protect/login.esp). Download and install the [GlobalProtecht VPN client](https://vpn.gatech.edu/global-protect/getsoftwarepage.esp).
+* Login to the [GeorgiaTech VPN Service](https://vpn.gatech.edu/global-protect/login.esp). Download and install the [GlobalProtect VPN client](https://vpn.gatech.edu/global-protect/getsoftwarepage.esp).
 * Using the VPN client, connect to [vpn.gatech.edu](vpn.gatech.edu) and login via your GeorgiaTech username and password.
 * Connect to the PACE ICE on-demand service at [ondemand-ice.pace.gatech.edu](https://ondemand-ice.pace.gatech.edu/pun/sys/dashboard).
-* Click on 'My Interactive Sessions' and select whichever one you prefer on the 'Interactive Apps' meanu (we recommend Coder or VS Code).
+* Click on 'My Interactive Sessions' and select whichever one you prefer on the 'Interactive Apps' menu (we recommend Coder or VS Code).
 
 ### Environment setup
-Please note that PACE ICE machines already come with Apptainer and Conda installed (use `module load anaconda3` or `module load mamba`). As such, you can follow the instructions from the [python environment section](#Python-environment) as is. However, we recommend the following additions:
-
-- **PyTorch:** Please use the following value for `--index-url` in the `requirements.txt` file to use CUDA with PyTorch.
-```bash
---index-url https://download.pytorch.org/whl/cu126
-```
-- **prefix:** We recommend that you install the conda environment using a `--prefix` flag as the `~/scratch` directory to prevent using up your storage.
-```bash
-environment='deepracer'
-scratch_directory="$HOME"/scratch/conda
-conda env create -f environment.yaml \
-    --prefix "$scratch_directory"/"$environment"
-conda config --append envs_dirs "$scratch_directory"
-conda activate "$environment"
-```
+Please note that PACE ICE machines already come with Apptainer and UV installed (use `module load uv`). As such, you do not need Docker, and can follow the instructions from the [python environment section](#Python-environment) exactly as written.
