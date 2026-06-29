@@ -5,11 +5,23 @@
 ### WSL Ubuntu (only for Windows)
 If using Windows, please install [WSL2 and Ubuntu](https://documentation.ubuntu.com/wsl/latest/howto/install-ubuntu-wsl2/).
 
-Also install either the [WSL extention](https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.remote-wsl) or [Remote Development extension](https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.vscode-remote-extensionpack) for VSCode to develop in WSL.
+Also install either the [WSL extension](https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.remote-wsl) or [Remote Development extension](https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.vscode-remote-extensionpack) for VSCode to develop in WSL.
+
+### Colima + Rosetta (only for Mac w/ Apple Silicon)
+
+```bash
+brew install colima
+softwareupdate --install-rosetta --agree-to-license
+```
 
 ### Docker
 #### Windows
 Install the [Docker Desktop for Windows](https://docs.docker.com/desktop/setup/install/windows-install/) and [configure it for WSL](https://docs.docker.com/desktop/features/wsl/).
+
+#### Mac
+```bash
+brew install docker
+```
 
 #### Linux (Ubuntu)
 Uninstall all conflicting packages.
