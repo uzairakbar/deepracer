@@ -15,7 +15,7 @@ on_pace_ice() {
     fi
 }
 
-export base=uzairakbar/deepracer:v0
+export base=uzairakbar/deepracer-test:v0
 export container=deepracer
 export image=deepracer
 
