@@ -31,6 +31,7 @@ fi
 if command_exists apptainer; then
 
     rm -f "$SCRATCH_DIR"/"$image".sif
+    rm -f deepracer.sif deepracer.sif.tmp
     overlay=/tmp/"$container"_overlay
     rm -rf "$overlay"
 

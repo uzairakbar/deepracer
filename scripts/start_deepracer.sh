@@ -106,13 +106,21 @@ fi
 if command_exists apptainer; then
     echo "Building deepracer Apptainer container."
 
-    apptainer pull deepracer_base.sif docker://"$base"
+    mkdir -p "$SCRATCH_DIR"
+    CACHED_SIF="$SCRATCH_DIR/$image.sif"
 
-    yes no | apptainer build --ignore-fakeroot-command "$SCRATCH_DIR"/"$image".sif deepracer.def
+    if [ -f "$CACHED_SIF" ]; then
+        echo "Reusing cached image $CACHED_SIF."
+    else
+        echo "Pulling $base -> $image ..."
+        rm -f "$image".sif.tmp
+        apptainer pull --force --disable-cache "$image".sif.tmp docker://"$base"
+        mv -f "$image".sif.tmp "$CACHED_SIF"
+    fi
 
     GYM_PORT=$(string_to_port "$USER")
     echo "Using port $GYM_PORT for deepracer."
-    
+
     GAZEBO_PORT=$(string_to_port "GAZEBO_$USER")        # default is 11345
     GAZEBO_MASTER_URI="http://localhost:$GAZEBO_PORT"
     echo "Using port $GAZEBO_MASTER_URI for Gazebo Master."
@@ -127,17 +135,17 @@ if command_exists apptainer; then
         --no-mount "$HOME",/tmp,/dev,/etc/hosts,/etc/localtime,/proc,/sys,/var/tmp \
         --bind configs:/configs \
         --overlay "$overlay"/:/. \
-        --env EVALUATION="$evaluation",EVAL_WORLD_NAME="$world_name",GYM_PORT="$GYM_PORT",GAZEBO_MASTER_URI="$GAZEBO_MASTER_URI",ROS_MASTER_URI="$ROS_MASTER_URI" \
-        "$SCRATCH_DIR"/"$image".sif "$container" \
+        --pwd /opt/ml/code \
+        --env LC_ALL=C,EVALUATION="$evaluation",EVAL_WORLD_NAME="$world_name",GYM_PORT="$GYM_PORT",GAZEBO_MASTER_URI="$GAZEBO_MASTER_URI",ROS_MASTER_URI="$ROS_MASTER_URI" \
+        "$CACHED_SIF" "$container" \
         --cpus="$cpus" --memory="$memory"
 
     echo "Started deepracer Apptainer container."
     
 # check for Docker
 elif command_exists docker; then
-    echo "Building deepracer Docker container."
-    
-    # pull base image
+    echo "Starting deepracer Docker container."
+
     if docker_image_exists "$base"; then
         echo "Docker image '$base' already exists. Skipping pull."
     else
@@ -145,16 +153,8 @@ elif command_exists docker; then
         docker pull "$base"
     fi
 
-    # build P4 deepracer image
-    if docker_image_exists "${image}:latest"; then
-        echo "Docker image '$image' already exists. Skipping build."
-    else
-        echo "Docker image '$image' not found. Building now..."
-        docker build -t "$image" .
-        
-        # prune just in case of dangling images
-        docker system prune --force
-    fi
+    # re-tag to a friendly $image identity
+    docker tag "$base" "$image"
 
     echo "Using port 8888 for deepracer."
 
@@ -166,7 +166,7 @@ elif command_exists docker; then
         -e EVAL_WORLD_NAME="$world_name" \
         --cpus="$cpus" --memory="$memory" \
         "$image"
-    
+
     echo "Started deepracer Docker container."
 else
     # if neither Docker nor Apptainer is found
