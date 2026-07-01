@@ -1,6 +1,5 @@
 import json
 import hashlib
-import platform
 import numpy as np
 from loguru import logger
 from gymnasium import spaces
@@ -164,10 +163,3 @@ def string_to_port(string):
     )
     port = 1024 + (hash_int % (32767 - 1024 + 1))
     return int(port)
-
-
-def get_host_name():
-    try:
-        return platform.node()
-    except:
-        return 'unknown'

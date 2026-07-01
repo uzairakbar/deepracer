@@ -11,8 +11,7 @@ from deepracer_gym.envs.utils import (
     make_action_space,
     make_observation_space,
     num_channels,
-    string_to_port,
-    get_host_name
+    string_to_port
 )
 from configs.reward_function import (
     reward_function as DEFAULT_REWARD_FUNCTION
@@ -22,13 +21,15 @@ from configs.reward_function import (
 ActionType: TypeAlias=(int | np.ndarray | list[float])
 HOST: str='127.0.0.1'
 DEFAULT_PORT: int=8888
-PACE_DOMAIN: str='.pace.gatech.edu'
+# Resolve the gym-server port the way scripts/start_deepracer.sh assigns it: a
+# per-user hash of $USER, which both the Docker and Apptainer paths publish/bind
+# to. An explicit GYM_PORT env var overrides; fall back to DEFAULT_PORT.
 try:
-    if get_host_name().endswith(PACE_DOMAIN):
-        port = string_to_port(os.environ['USER'])
+    if 'GYM_PORT' in os.environ:
+        port = int(os.environ['GYM_PORT'])
     else:
-        port = DEFAULT_PORT
-except:
+        port = string_to_port(os.environ['USER'])
+except Exception:
     port = DEFAULT_PORT
 
 

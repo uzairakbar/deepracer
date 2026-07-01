@@ -45,23 +45,6 @@ string_to_port() {
 }
 
 
-# check if on Mac OS
-on_macos() {
-    [[ "$(uname)" == "Darwin" ]]
-}
-
-
-# check if on a PACE ICE machine
-on_pace_ice() {
-    local var="$1"
-    if [[ "$var" == *pace.gatech.edu ]]; then
-        return 0  # Success (matches)
-    else
-        return 1  # Failure (does not match)
-    fi
-}
-
-
 while getopts "C:M:E:W:" opt
 do
     case "$opt" in
@@ -92,12 +75,16 @@ export container=deepracer
 export image=deepracer
 
 
-SCRATCH_DIR=''
-if on_pace_ice "$(hostname)"; then
-    SCRATCH_DIR="$HOME"/scratch    
+if [ -n "$SCRATCH" ]; then
+    SCRATCH_DIR="$SCRATCH"
+elif [ -d "$HOME/scratch" ]; then
+    SCRATCH_DIR="$HOME/scratch"
 else
     SCRATCH_DIR="$PWD"
 fi
+
+GYM_PORT=$(string_to_port "$USER")
+echo "Using port $GYM_PORT for the gym server."
 
 
 # check for Apptainer
@@ -116,24 +103,13 @@ if command_exists apptainer; then
         mv -f "$image".sif.tmp "$CACHED_SIF"
     fi
 
-    GYM_PORT=$(string_to_port "$USER")
-    echo "Using port $GYM_PORT for deepracer."
-
-    GAZEBO_PORT=$(string_to_port "GAZEBO_$USER")        # default is 11345
-    GAZEBO_MASTER_URI="http://localhost:$GAZEBO_PORT"
-    echo "Using port $GAZEBO_MASTER_URI for Gazebo Master."
-
-    ROS_PORT=$(string_to_port "ROS_$USER")              # defaults is 11311
-    ROS_MASTER_URI="http://localhost:$ROS_PORT"
-    echo "Using port $ROS_MASTER_URI for ROS Master."
-
     overlay=/tmp/"$container"_overlay
     rm -rf "$overlay" && mkdir "$overlay"
     apptainer instance run \
         --no-mount "$HOME",/tmp,/dev,/etc/hosts,/etc/localtime,/proc,/sys,/var/tmp \
         --bind configs:/configs \
         --overlay "$overlay"/:/. \
-        --env LC_ALL=C,EVALUATION="$evaluation",EVAL_WORLD_NAME="$world_name",GYM_PORT="$GYM_PORT",GAZEBO_MASTER_URI="$GAZEBO_MASTER_URI",ROS_MASTER_URI="$ROS_MASTER_URI" \
+        --env LC_ALL=C,EVALUATION="$evaluation",EVAL_WORLD_NAME="$world_name",GYM_PORT="$GYM_PORT" \
         "$CACHED_SIF" "$container" \
         --cpus="$cpus" --memory="$memory"
 
@@ -153,12 +129,11 @@ elif command_exists docker; then
     # re-tag to a friendly $image identity
     docker tag "$base" "$image"
 
-    echo "Using port 8888 for deepracer."
-
     docker run --rm --detach \
         --name="$container" \
         -v "$PWD"/"$configs":/"$configs":ro \
-        -p 8888:8888 \
+        -p "$GYM_PORT":"$GYM_PORT" \
+        -e GYM_PORT="$GYM_PORT" \
         -e EVALUATION="$evaluation" \
         -e EVAL_WORLD_NAME="$world_name" \
         --cpus="$cpus" --memory="$memory" \

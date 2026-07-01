@@ -27,7 +27,7 @@ You may also find other scripts under `scripts/` similarly useful to stop or res
 To check if the container is rumming you can use the following commands.
 ```bash
 docker ps -a            # if using Docker (local setup)
-apptainer instance list # if using Apptainer (PACE ICE)
+apptainer instance list # if using Apptainer (HPC / shared host)
 ```
 **Note** that the simulator is initialized by the `agent_params.json` and `environment_params.yaml` config files in the `configs/` directory. To change the simulation settings, restart it after changing these files under the `configs/` directory.
 
@@ -276,6 +276,6 @@ env = gym.make('deepracer-v0', render_mode='rgb_array')
 
 ## Limitations, Problems and Troubleshooting
 - Due to simulation limitations, the `deepracer-v0` environment **does NOT support** [environment vectorization](https://gymnasium.farama.org/api/vector/). This includes `gymnasium.vector.SyncVectorEnv`, which has to be run with a maximum of `num_envs=1`.
-- If Docker does not work for you without `sudo`, please follow the instructions in [`README.md`](https://github.gatech.edu/rldm/P4_deepracer/blob/main/SETUP.md) to add it to `sudo` group.
+- If Docker does not work for you without `sudo`, please follow the instructions in [`SETUP.md`](../SETUP.md) to add it to `sudo` group.
 - Please note that the first run of `scripts/start_deepracer.sh` or `scripts/restart_deepracer.sh` can be quite slow. This is because the simulator image is downloaded (~several GBs) before being started. But this should be a one-time process and subsequent runs should be relatively quicker.
 - We have tried to deligently test the simulator and various configurations for this project. However, it is entirely possible that some edge-cases may have gone overlooked due to limited time-constraints. Should you encounter such an edge case, please feel free to hop into an OH or reach out to a TA to get it fixed ASAP.

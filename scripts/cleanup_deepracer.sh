@@ -5,26 +5,22 @@ command_exists() {
     command -v "$1" >/dev/null 2>&1
 }
 
-# check if on a PACE ICE machine
-on_pace_ice() {
-    local var="$1"
-    if [[ "$var" == *pace.gatech.edu ]]; then
-        return 0  # Success (matches)
-    else
-        return 1  # Failure (does not match)
-    fi
-}
-
 export base=uzairakbar/deepracer-test:v0
 export container=deepracer
 export image=deepracer
 
-SCRATCH_DIR=''
-if on_pace_ice "$(hostname)"; then
-    SCRATCH_DIR="$HOME"/scratch
-    module load uv
+# Same scratch resolution as start_deepracer.sh: $SCRATCH, else ~/scratch, else cwd.
+if [ -n "$SCRATCH" ]; then
+    SCRATCH_DIR="$SCRATCH"
+elif [ -d "$HOME/scratch" ]; then
+    SCRATCH_DIR="$HOME/scratch"
 else
     SCRATCH_DIR="$PWD"
+fi
+
+# load uv via environment modules if available (common on HPC clusters)
+if command_exists module; then
+    module load uv 2>/dev/null || true
 fi
 
 # check for Apptainer
@@ -59,7 +55,7 @@ if command_exists uv; then
         rm -rf .venv
     fi
     
-    # remove the scratch dir in PACE
+    # remove the per-project uv env under scratch
     if [ -d "$SCRATCH_DIR/uv_envs/deepracer" ]; then
         rm -rf "$SCRATCH_DIR/uv_envs/deepracer"
     fi

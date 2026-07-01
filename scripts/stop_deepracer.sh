@@ -63,7 +63,7 @@ elif command_exists docker; then
     
     docker stop "$container"
 
-    my_port=8888
+    my_port=$(string_to_port "$USER")
 
     echo "Stopped deepracer Docker container at port ${my_port}."
 
