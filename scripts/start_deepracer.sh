@@ -82,11 +82,9 @@ then
     echo "Capping deepracer at ${cpus} CPUs and ${memory} memory.";
 fi
 
-patches=patches
 configs=configs
 
 mkdir -p "$configs"
-mkdir -p "$patches"
 
 # export base=uzairakbar/deepracer:v1
 export base=uzairakbar/deepracer-test:v0
