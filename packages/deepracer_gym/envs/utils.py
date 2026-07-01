@@ -12,7 +12,8 @@ STEREO_CAMERA_SHAPE: tuple[int, ...]=(2,)+CAMERA_SHAPE          # C x H x W
 FRONT_FACING_CAMERA_SHAPE: tuple[int, ...]=(3,)+CAMERA_SHAPE    # C x H x W
 SENSOR_SPACE: dict[str, spaces.Box]={
     'LIDAR': spaces.Box(
-        low=0.15, high=float('inf'), shape=LIDAR_SHAPE, dtype=np.float64
+        # container emits float32; match it so gymnasium raises no dtype warning
+        low=0.15, high=float('inf'), shape=LIDAR_SHAPE, dtype=np.float32
     ),
     'STEREO_CAMERAS': spaces.Box(
         low=0, high=255, shape=STEREO_CAMERA_SHAPE, dtype=np.uint8
