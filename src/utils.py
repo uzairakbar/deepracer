@@ -167,7 +167,10 @@ def demo(
         name_prefix=f'{world_name}-{race_type}-{agent.name}'
     )
 
-    observation, _ = demo_environment.reset()
+    observation, info = demo_environment.reset()
+    prev_sim_time = info['reward_params']['sim_time']
+    total_sim_dt = 0.0
+    n_sim_dt = 0
 
     demo_progress = PROGRESS_MANAGER.counter(
         total=MAX_DEMO_STEPS, desc=f'{world_name} {race_type} demo', unit='steps', leave=False
@@ -175,23 +178,33 @@ def demo(
     for t in range(MAX_DEMO_STEPS):
         # get action from policy
         action = agent.get_action(torch.Tensor(observation)[None, :])
-        
+
         if not isinstance(action, np.ndarray) and torch.is_tensor(action):
             action = action.cpu().detach().numpy()
-        
+
         if isinstance(demo_environment.action_space, spaces.Discrete):
             action = action.item()
-        
+
         # execute the action, get observation
-        observation, _, terminated, truncated, _ = demo_environment.step(
+        observation, _, terminated, truncated, info = demo_environment.step(
             action
         )
+
+        # update the running sim-time-per-step estimate and set the video fps
+        sim_time = info['reward_params']['sim_time']
+        sim_dt = sim_time - prev_sim_time
+        prev_sim_time = sim_time
+        if sim_dt > 0:
+            total_sim_dt += sim_dt
+            n_sim_dt += 1
+            demo_environment.frames_per_sec = max(1, round(n_sim_dt / total_sim_dt))
+
         demo_progress.update()
         demo_progress.refresh()
-        
+
         if terminated or truncated:
             break
-    
+
     demo_environment.close()
     demo_progress.close()
     
@@ -274,7 +287,7 @@ def evaluate_track(
     eval_environment = make_environment(
         ENVIRONMENT_NAME
     )
-    observation, _ = eval_environment.reset()
+    observation, info = eval_environment.reset()
 
     eval_metrics = {
         'progress': [],
@@ -284,17 +297,20 @@ def evaluate_track(
         total=EVAL_EPISODES, desc=f'Evaluating {world_name}', unit='episodes'
     )
     for episode in range(EVAL_EPISODES):
-        
+
+        # absolute sim clock at the episode start
+        start_sim_time = info['reward_params']['sim_time']
+
         episode_progress = PROGRESS_MANAGER.counter(
             total=MAX_EVAL_STEPS, desc=f'Episode {episode}', unit='steps', leave=False
         )
         for t in range(MAX_EVAL_STEPS):
 
             action = agent.get_action(torch.Tensor(observation)[None, :])
-            
+
             if not isinstance(action, np.ndarray) and torch.is_tensor(action):
                 action = action.cpu().detach().numpy()
-            
+
             if isinstance(eval_environment.action_space, spaces.Discrete):
                 action = action.item()
 
@@ -308,7 +324,7 @@ def evaluate_track(
             done = terminated or truncated
             if done or t == MAX_EVAL_STEPS - 1:
                 progress = info['reward_params']['progress']
-                lap = lap_time(info)
+                lap = lap_time(info, start_sim_time)
 
                 eval_metrics['progress'].append(
                     progress
@@ -475,13 +491,10 @@ def plot_metrics(
     )
 
 
-def lap_time(info):
+def lap_time(info, start_sim_time):
+    # Lap time in simulation seconds
     if info['reward_params']['progress'] >= 100:
-        if isinstance(info['episode']['t'], np.ndarray):
-            # for vectorized environments
-            return info['episode']['t'].mean()
-        else:
-            return info['episode']['t']
+        return info['reward_params']['sim_time'] - start_sim_time
     else:
         # using in place of float('-inf') for better tensorboard visualizaiton
         return np.nan
