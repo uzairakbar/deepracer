@@ -133,7 +133,6 @@ if command_exists apptainer; then
         --no-mount "$HOME",/tmp,/dev,/etc/hosts,/etc/localtime,/proc,/sys,/var/tmp \
         --bind configs:/configs \
         --overlay "$overlay"/:/. \
-        --pwd /opt/ml/code \
         --env LC_ALL=C,EVALUATION="$evaluation",EVAL_WORLD_NAME="$world_name",GYM_PORT="$GYM_PORT",GAZEBO_MASTER_URI="$GAZEBO_MASTER_URI",ROS_MASTER_URI="$ROS_MASTER_URI" \
         "$CACHED_SIF" "$container" \
         --cpus="$cpus" --memory="$memory"
