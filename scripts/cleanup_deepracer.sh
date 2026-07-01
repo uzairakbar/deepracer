@@ -36,6 +36,8 @@ if command_exists apptainer; then
 # check for Docker
 elif command_exists docker; then
     
+    docker stop "$container"
+
     docker rm "$container"
 
     docker image rm -f "$image"
