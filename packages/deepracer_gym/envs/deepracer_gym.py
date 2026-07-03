@@ -2,7 +2,6 @@ import os
 import weakref
 import numpy as np
 import gymnasium as gym
-from pathlib import Path
 from loguru import logger
 from gymnasium import spaces
 from typing import TypeAlias, Callable
@@ -57,8 +56,8 @@ class DeepracerGymEnv(gym.Env):
     }
     def __init__(
             self,
-            agent_config: dict | str | Path | None=None,
-            track_config: dict | str | Path | None=None,
+            agent_config: dict | None=None,
+            track_config: dict | None=None,
             reward_function: Callable | None=None,
             world_name: str | None=None,
             evaluation: bool=False,

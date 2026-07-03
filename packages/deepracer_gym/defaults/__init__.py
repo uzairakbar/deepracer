@@ -2,7 +2,6 @@
 # reward_function.py) and the frozen track list (tracks.txt), so the package
 # works from any cwd without the repo's top-level configs/ directory.
 import json
-import pathlib
 import importlib.resources as resources
 
 
@@ -19,25 +18,27 @@ def default_track_config() -> dict:
     return yaml.safe_load(_read('environment_params.yaml'))
 
 
-def resolve_agent_config(config=None) -> dict:
-    '''Normalize an agent config given as a dict, a path to a .json file, or None
-    (-> packaged default).'''
-    if isinstance(config, dict):
-        return config
+def resolve_agent_config(config: dict | None=None) -> dict:
+    '''An agent config is a plain dict (or None -> packaged default). File
+    handling is the caller's job, not ours.'''
     if config is None:
         return default_agent_config()
-    return json.loads(pathlib.Path(config).read_text())
-
-
-def resolve_track_config(config=None) -> dict:
-    '''Normalize a track config given as a dict, a path to a .yaml/.json file, or
-    None (-> packaged default).'''
     if isinstance(config, dict):
         return config
+    raise TypeError(
+        f'agent_config must be a dict or None, got {type(config).__name__}.'
+    )
+
+
+def resolve_track_config(config: dict | None=None) -> dict:
+    '''A track config is a plain dict (or None -> packaged default).'''
     if config is None:
         return default_track_config()
-    import yaml
-    return yaml.safe_load(pathlib.Path(config).read_text())
+    if isinstance(config, dict):
+        return config
+    raise TypeError(
+        f'track_config must be a dict or None, got {type(config).__name__}.'
+    )
 
 
 def default_reward_function():

@@ -25,3 +25,22 @@ def shutdown_all(include_cached: bool=True):
     from deepracer_gym.service.manager import SimulationManager
     if SimulationManager._instance is not None:
         SimulationManager._instance.shutdown_all(include_cached=include_cached)
+
+
+def running() -> list[str]:
+    '''Names of DeepRacer simulators currently running on this host (across any
+    kernels/processes). Handy to see what is up before/after your work.'''
+    import shutil
+    import subprocess
+    from deepracer_gym.service.spec import LABEL_NS
+    names: list[str] = []
+    for engine in ('podman', 'docker'):
+        if shutil.which(engine) is None:
+            continue
+        result = subprocess.run(
+            [engine, 'ps', '--filter', f'label={LABEL_NS}.managed=true',
+             '--format', '{{.Names}}'],
+            capture_output=True, text=True,
+        )
+        names += [n for n in result.stdout.split() if n]
+    return names

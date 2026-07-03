@@ -24,7 +24,6 @@ SENSOR_SPACE: dict[str, spaces.Box]={
     'SECTOR_LIDAR': None,
     'LEFT_CAMERA': None
 }
-AGENT_PARAMS_PATH: str='configs/agent_params.json'
 
 
 def validate_action_space_config(config: dict, action_space_type: str):
