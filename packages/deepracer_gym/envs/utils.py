@@ -96,18 +96,20 @@ def action_space_type(config: dict):
     return space_type
 
 
-def make_action_space(config_path: str=AGENT_PARAMS_PATH):
-    with open(config_path, 'r') as file:
-        config = json.load(file)
-    
+def make_action_space(config=None):
+    '''Build the action space from an agent config given as a dict, a path, or
+    None (-> packaged default).'''
+    from deepracer_gym.defaults import resolve_agent_config
+    config = resolve_agent_config(config)
+
     assert 'action_space' in config, \
-        f'Action space not defined in config file {config_path}.'
-    
+        f'Action space not defined in agent config.'
+
     try:
         space_type = action_space_type(config)
     except Exception as e:
         logger.error(
-            f'Incorrectly defined action_space in config file {config_path}.'
+            f'Incorrectly defined action_space in agent config.'
         )
         raise e
     
@@ -130,9 +132,11 @@ def make_action_space(config_path: str=AGENT_PARAMS_PATH):
     return action_space, config['action_space']
 
 
-def make_observation_space(config_path: str=AGENT_PARAMS_PATH):
-    with open(config_path, 'r') as file:
-        config = json.load(file)
+def make_observation_space(config=None):
+    '''Build the observation space from an agent config given as a dict, a path,
+    or None (-> packaged default).'''
+    from deepracer_gym.defaults import resolve_agent_config
+    config = resolve_agent_config(config)
     sensors: list[str]=config['sensor']
     
     for sensor in sensors:
