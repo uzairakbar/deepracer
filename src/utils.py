@@ -80,17 +80,33 @@ def device():
     return torch.device(device)
 
 
+AGENT_PARAMS_PATH: str='configs/agent_params.json'
+
+
 def make_environment(
         environment_name: str=ENVIRONMENT_NAME,
         seed: int=SEED,
+        agent_config=None,
+        track_config=None,
         **kwargs
     ):
-    environment = gym.make(environment_name, **kwargs)
-    
+    # Default to this project's configs/ so edits there take effect (the env
+    # itself would otherwise fall back to the packaged defaults).
+    if agent_config is None:
+        agent_config = AGENT_PARAMS_PATH
+    if track_config is None:
+        track_config = ENVIRONMENT_PARAMS_PATH
+    environment = gym.make(
+        environment_name,
+        agent_config=agent_config,
+        track_config=track_config,
+        **kwargs
+    )
+
     environment = RecordEpisodeStatistics(
         FlattenObservation(environment)
     )
-    
+
     # environment.seed(seed)
     environment.action_space.seed(seed)
     environment.observation_space.seed(seed)
@@ -271,21 +287,14 @@ def evaluate_track(
         f'Starting {race_type} evaluation on {world_name} track.'
     )
 
-    # restart the simulation in evaluation mode
-    run_command([
-        '/bin/bash',
-        './scripts/restart_deepracer.sh',
-        '-E', 'true',           # evaluation mode
-        '-W', world_name,       # specify WORLD_NAME
-    ])
-
     eval_device = torch.device('cpu')
     agent.eval().to(eval_device)
     os.makedirs(directory, exist_ok=True)
 
-    # create environment with proper render_mode
+    # The environment now provisions its own sim in evaluation mode on the
+    # requested track (no bash restart); closing it below tears the sim down.
     eval_environment = make_environment(
-        ENVIRONMENT_NAME
+        ENVIRONMENT_NAME, evaluation=True, world_name=world_name
     )
     observation, info = eval_environment.reset()
 
@@ -402,12 +411,6 @@ def evaluate(
     
     with open(f'{directory}/{race_type}-{agent.name}.json', '+w') as f:
         json.dump(eval_metrics, f)
-    
-    # restart the simulation with specified parameters
-    run_command([
-        '/bin/bash',
-        './scripts/restart_deepracer.sh'
-    ])
 
     return eval_metrics
 
