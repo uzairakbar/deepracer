@@ -1,5 +1,12 @@
 #!/bin/bash
 
+# ─── DEPRECATED ────────────────────────────────────────────────────────────
+# Manual start/stop is no longer required: constructing a deepracer-v0
+# environment now starts its own simulator and env.close() stops it. See
+# usage.ipynb. This script is kept only for backward compatibility and will be
+# removed in a future release. To reap orphaned sims: python -m deepracer_gym.clean
+# ───────────────────────────────────────────────────────────────────────────
+
 # check if a command exists
 command_exists() {
     command -v "$1" >/dev/null 2>&1

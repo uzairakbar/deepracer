@@ -1,5 +1,10 @@
 #!/bin/bash
 
+# ─── DEPRECATED ────────────────────────────────────────────────────────────
+# Container/image teardown now lives in: python -m deepracer_gym.clean
+# This script additionally tears down the uv/venv (kept for that purpose).
+# ───────────────────────────────────────────────────────────────────────────
+
 # check if a command exists
 command_exists() {
     command -v "$1" >/dev/null 2>&1
