@@ -33,6 +33,34 @@ def _tcp_open(host: str, port: int, timeout: float=0.5) -> bool:
             return False
 
 
+def _zmq_reserves(port: int, timeout: float=5.0) -> bool:
+    '''True if a ZMQ gym server is live on the port and re-serves a fresh client
+    (sends an observation in response to a `ready`). Used before attaching to a
+    cached container so cache degrades to a fresh start instead of hanging on a
+    sim that did not survive the previous client's disconnect (§4.11 safety
+    valve). A bare TCP probe is not enough under Docker/Podman (the userland
+    proxy answers even when the app is dead).'''
+    try:
+        import zmq
+        import msgpack
+    except Exception:
+        return _tcp_open('127.0.0.1', port)      # no zmq here; best-effort
+    ctx = zmq.Context.instance()
+    sock = ctx.socket(zmq.REQ)
+    sock.setsockopt(zmq.LINGER, 0)
+    sock.setsockopt(zmq.RCVTIMEO, int(timeout * 1000))
+    sock.setsockopt(zmq.SNDTIMEO, int(timeout * 1000))
+    sock.connect(f'tcp://127.0.0.1:{port}')
+    try:
+        sock.send(msgpack.packb({'ready': 1}))
+        sock.recv()                              # any reply => server re-served
+        return True
+    except Exception:
+        return False
+    finally:
+        sock.close()
+
+
 def _tail(text: str, lines: int=25) -> str:
     return '\n'.join(text.splitlines()[-lines:])
 
@@ -81,14 +109,14 @@ class SimulationManager:
         pool = self._idle.get(fp, [])
         while pool:
             handle = pool.pop()
-            if self.backend.is_alive(handle) and _tcp_open('127.0.0.1', handle.port):
+            if self.backend.is_alive(handle) and _zmq_reserves(handle.port):
                 self._live[handle.name] = handle
                 logger.info(f'[cache] re-attached warm {handle.name} (fp {fp})')
                 return handle
-            self.backend.stop(handle)      # stale; reap
+            self.backend.stop(handle)      # dead or won't re-serve; reap
         # cross-process: a container left running by another kernel
         found = self.backend.find_idle(fp)
-        if found and _tcp_open('127.0.0.1', found.port):
+        if found and self.backend.is_alive(found) and _zmq_reserves(found.port):
             self._live[found.name] = found
             logger.info(f'[cache] adopted running {found.name} (fp {fp})')
             return found
