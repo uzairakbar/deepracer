@@ -1,11 +1,8 @@
 import os
 import json
-import yaml
 import torch
 import random
-import shutil
 import enlighten
-import subprocess
 import numpy as np
 import pandas as pd
 import seaborn as sns
@@ -19,6 +16,8 @@ from gymnasium.wrappers import (
     RecordEpisodeStatistics
 )
 from IPython.display import Video, display, clear_output
+
+from deepracer_gym.defaults import resolve_track_config
 
 from src.agents import Agent
 
@@ -36,7 +35,6 @@ RC_PARAMS: dict = {
     'xtick.color': 'black',
     'ytick.color': 'black',
 }
-ENVIRONMENT_PARAMS_PATH: str='configs/environment_params.yaml'
 ENVIRONMENT_NAME: str='deepracer-v0'
 MAX_DEMO_STEPS: int = 1_000
 MAX_EVAL_STEPS: int = 1_000
@@ -80,22 +78,15 @@ def device():
     return torch.device(device)
 
 
-AGENT_PARAMS_PATH: str='configs/agent_params.json'
-
-
 def make_environment(
         environment_name: str=ENVIRONMENT_NAME,
         seed: int=SEED,
-        agent_config=None,
-        track_config=None,
+        agent_config: dict | None=None,
+        track_config: dict | None=None,
         **kwargs
     ):
-    # Default to this project's configs/ so edits there take effect (the env
-    # itself would otherwise fall back to the packaged defaults).
-    if agent_config is None:
-        agent_config = AGENT_PARAMS_PATH
-    if track_config is None:
-        track_config = ENVIRONMENT_PARAMS_PATH
+    # agent_config / track_config are dicts (or None -> packaged defaults),
+    # passed straight through to the environment.
     environment = gym.make(
         environment_name,
         agent_config=agent_config,
@@ -114,28 +105,20 @@ def make_environment(
     return environment
 
 
-def get_world_name(
-    environment_params_path: str=ENVIRONMENT_PARAMS_PATH
-    ):
-    with open(environment_params_path, 'r') as f:
-        environment_params = yaml.safe_load(f)
-    
-    if 'WORLD_NAME' not in environment_params:
-        raise ValueError(
-            f'WORLD_NAME not defined in {environment_params_path}'
-        )
-    
-    return environment_params['WORLD_NAME']
+def get_world_name(track_config: dict | None=None):
+    track_config = resolve_track_config(track_config)
+
+    if 'WORLD_NAME' not in track_config:
+        raise ValueError('WORLD_NAME not defined in track_config.')
+
+    return track_config['WORLD_NAME']
 
 
-def get_race_type(
-    environment_params_path: str=ENVIRONMENT_PARAMS_PATH
-    ):
-    with open(environment_params_path, 'r') as f:
-        environment_params = yaml.safe_load(f)
-    
-    obstacles = int(environment_params['NUMBER_OF_OBSTACLES'])
-    bots = int(environment_params['NUMBER_OF_BOT_CARS'])
+def get_race_type(track_config: dict | None=None):
+    track_config = resolve_track_config(track_config)
+
+    obstacles = int(track_config['NUMBER_OF_OBSTACLES'])
+    bots = int(track_config['NUMBER_OF_BOT_CARS'])
     if (
         obstacles == 0 and bots == 0
     ):
@@ -156,15 +139,13 @@ def get_race_type(
 
 def demo(
         agent: Agent,
+        agent_config: dict | None=None,
+        track_config: dict | None=None,
         environment_name: str=ENVIRONMENT_NAME,
         directory: str='./demos'               # directory to save videos
     ):
-    race_type = get_race_type(
-        environment_params_path=ENVIRONMENT_PARAMS_PATH
-    )
-    world_name = get_world_name(
-        environment_params_path=ENVIRONMENT_PARAMS_PATH
-    )
+    race_type = get_race_type(track_config)
+    world_name = get_world_name(track_config)
 
     demo_device = torch.device('cpu')
     agent.eval().to(demo_device)
@@ -172,7 +153,8 @@ def demo(
 
     # create environment with proper render_mode
     demo_environment = make_environment(
-        environment_name, render_mode='rgb_array'
+        environment_name, render_mode='rgb_array',
+        agent_config=agent_config, track_config=track_config,
     )
 
     # apply video recording wrapper
@@ -254,34 +236,15 @@ def demo(
     )
 
 
-def command_exists(command: str) -> bool:
-    '''
-    Check if a command exists and is executable in the system's PATH.
-    '''
-    return shutil.which(command) is not None
-
-
-def run_command(command):    
-    result=subprocess.run(
-        command, capture_output=True, text=True
-    )
-    
-    logger.info(result.stdout)
-    if result.returncode:
-        logger.error(result.stderr)
-    else:
-        logger.warning(result.stderr)
-
-
 def evaluate_track(
         agent: Agent,
         world_name: str,
+        agent_config: dict | None=None,
+        track_config: dict | None=None,
         environment_name: str=ENVIRONMENT_NAME,
         directory: str='./evaluations'               # directory to save eval data
     ):
-    race_type = get_race_type(
-        environment_params_path=ENVIRONMENT_PARAMS_PATH
-    )
+    race_type = get_race_type(track_config)
 
     logger.info(
         f'Starting {race_type} evaluation on {world_name} track.'
@@ -294,7 +257,8 @@ def evaluate_track(
     # The environment now provisions its own sim in evaluation mode on the
     # requested track (no bash restart); closing it below tears the sim down.
     eval_environment = make_environment(
-        ENVIRONMENT_NAME, evaluation=True, world_name=world_name
+        environment_name, evaluation=True, world_name=world_name,
+        agent_config=agent_config, track_config=track_config,
     )
     observation, info = eval_environment.reset()
 
@@ -374,13 +338,13 @@ def evaluate_track(
 
 def evaluate(
         agent: Agent,
+        agent_config: dict | None=None,
+        track_config: dict | None=None,
         environment_name: str=ENVIRONMENT_NAME,
         directory: str='./evaluations'               # directory to save eval data
     ):
-    race_type = get_race_type(
-        environment_params_path=ENVIRONMENT_PARAMS_PATH
-    )
-    
+    race_type = get_race_type(track_config)
+
     eval_world_names = ([
         'reInvent2019_wide',    # A to Z Speedway
         'reInvent2019_track',   # Smile Speedway
@@ -404,6 +368,8 @@ def evaluate(
         eval_metrics[world_name] = evaluate_track(
             agent=agent,
             world_name=world_name,
+            agent_config=agent_config,
+            track_config=track_config,
             environment_name=environment_name,
             directory=directory
         )
