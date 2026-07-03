@@ -30,9 +30,21 @@ setup(
         'pyzmq',
         'msgpack',
         'msgpack_numpy',
-        'loguru'
+        'loguru',
+        'docker',       # Docker/Podman(-socket) backend
+        'pyyaml',       # packaged track_config parsing
     ],
     packages=find_packages(),
+    package_data={
+        # packaged default configs + frozen track list (§4.7)
+        'deepracer_gym.defaults': [
+            'agent_params.json',
+            'environment_params.yaml',
+            'reward_function.py',
+            'tracks.txt',
+        ],
+    },
+    include_package_data=True,
     classifiers=[
         'Programming Language :: Python :: 3',
         'License :: OSI Approved :: MIT License',

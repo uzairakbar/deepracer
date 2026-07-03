@@ -13,9 +13,7 @@ from deepracer_gym.envs.utils import (
     num_channels,
     string_to_port
 )
-from configs.reward_function import (
-    reward_function as DEFAULT_REWARD_FUNCTION
-)
+from deepracer_gym.defaults import default_reward_function
 
 
 ActionType: TypeAlias=(int | np.ndarray | list[float])
@@ -43,7 +41,7 @@ class DeepracerGymEnv(gym.Env):
             host: str=HOST,
             port: int=port,
             render_mode: str='rgb_array',
-            reward_function: Callable=DEFAULT_REWARD_FUNCTION,
+            reward_function: Callable | None=None,
             **kwargs
         ):
         super().__init__(**kwargs)
@@ -53,7 +51,10 @@ class DeepracerGymEnv(gym.Env):
         self.render_mode = render_mode
         self.action_space, self._action_metadata = make_action_space()
         self.observation_space, self._observation_metadata = make_observation_space()
-        self.reward_function = reward_function
+        self.reward_function = (
+            reward_function if reward_function is not None
+            else default_reward_function()
+        )
         
         if isinstance(self.action_space, spaces.Discrete):
             action_space_type='discrete'
