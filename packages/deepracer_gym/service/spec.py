@@ -1,3 +1,4 @@
+import os
 import json
 from dataclasses import dataclass
 
@@ -5,8 +6,9 @@ from deepracer_gym.service.identity import Identity, fingerprint
 
 
 # The pinned simulation image (kept as deepracer-test:v0, rebuilt in place while
-# in testing — REFACTOR_DESIGN.md §8).
-DEFAULT_IMAGE: str='uzairakbar/deepracer-test:v0'
+# in testing — REFACTOR_DESIGN.md §8). Overridable via DEEPRACER_IMAGE (e.g. a
+# local build, or a lightweight test image).
+DEFAULT_IMAGE: str=os.environ.get('DEEPRACER_IMAGE', 'uzairakbar/deepracer-test:v0')
 # The container's internal ZMQ bind; OCI backends publish it to identity.port.
 INTERNAL_PORT: int=8888
 # Discovery-label namespace (docker/podman labels; used by cache + clean).
