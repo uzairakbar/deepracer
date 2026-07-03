@@ -1,30 +1,69 @@
-"""A tiny stand-in for the DeepRacer sim container.
+"""A tiny ZMQ stand-in for the DeepRacer sim container.
 
-It exists to test the *container-management* code (backends, manager, ports,
-labels, cache, concurrency) on a real runtime without the multi-GB amd64 sim.
-It reproduces exactly the contract our code depends on:
-  - binds GYM_PORT (which Docker/Podman set to the internal 8888),
+Speaks exactly the REQ/REP msgpack protocol the client (gym_adapter +
+zmq_client) expects, so the full gym.make -> reset -> step -> close path can be
+tested on a real runtime without the multi-GB amd64 sim. It also reproduces the
+container-management contract our code depends on:
+  - binds GYM_PORT (Docker/Podman set it to the internal 8888),
   - materializes /configs from the DEEPRACER_* env vars (the §5.1 mechanism),
-  - prints a readiness marker,
-  - keeps accepting connections after a client disconnects (the survive-
-    disconnect property that cache/attach relies on).
-Optionally exits non-zero with a FATAL line if FAKE_CRASH=1 (readiness test).
+  - prints the "Waiting for gym client" readiness marker (as real gym_agent does),
+  - re-serves the next client after a disconnect (the cache/attach property).
+FAKE_CRASH=1 makes it exit non-zero with a FATAL line (readiness test).
 """
 import os
 import sys
-import socket
 import pathlib
+
+import zmq
+import msgpack
+import msgpack_numpy as m
+import numpy as np
+
+m.patch()
+
+READY_MARKER = '================= Waiting for gym client ================='
+EPISODE_LEN = int(os.environ.get('FAKE_EPISODE_LEN', '50'))
 
 
 def materialize_configs():
     agent = os.environ.get('DEEPRACER_AGENT_PARAMS')
     track = os.environ.get('DEEPRACER_ENVIRONMENT_PARAMS')
     cfg = pathlib.Path('/configs')
-    cfg.mkdir(exist_ok=True)
-    if agent:
-        (cfg / 'agent_params.json').write_text(agent)
-    if track:
-        (cfg / 'environment_params.yaml').write_text(track)
+    try:
+        cfg.mkdir(exist_ok=True)
+        if agent:
+            (cfg / 'agent_params.json').write_text(agent)
+        if track:
+            (cfg / 'environment_params.yaml').write_text(track)
+    except OSError:
+        pass
+
+
+def observation(step, game_over):
+    return {
+        '_next_state': {
+            # H, W, C — the client transposes CAMERA sensors to C, H, W
+            'STEREO_CAMERAS': np.zeros((120, 160, 2), dtype=np.uint8),
+            'LIDAR': np.ones((64,), dtype=np.float32),
+        },
+        '_game_over': bool(game_over),
+        '_goal': False,
+        'info': {
+            'reward_params': {
+                'steps': step,
+                'track_width': 1.0,
+                'distance_from_center': 0.0,
+                'progress': float(step),
+                'sim_time': step * 0.1,
+                'is_crashed': False,
+                'is_offtrack': False,
+            },
+            'episode_status': {
+                'lap_complete': False, 'crashed': False, 'reversed': False,
+                'off_track': False, 'immobilized': False, 'time_up': False,
+            },
+        },
+    }
 
 
 def main():
@@ -36,26 +75,28 @@ def main():
     materialize_configs()
     port = int(os.environ.get('GYM_PORT', '8888'))
 
-    server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    server.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-    server.bind(('0.0.0.0', port))
-    server.listen(8)
-    # Same readiness marker the real gym_agent.py prints once its ZMQ server has
-    # bound — the manager watches for it (OCI proxy makes a bare TCP probe lie).
-    print('================= Waiting for gym client =================', flush=True)
+    socket = zmq.Context.instance().socket(zmq.REP)
+    socket.setsockopt(zmq.RCVTIMEO, 60_000)      # re-await after a client vanishes
+    socket.bind(f'tcp://0.0.0.0:{port}')
+    print(READY_MARKER, flush=True)
 
-    while True:                        # re-serve forever (survive client disconnect)
+    while True:                                   # re-serve loop (survive disconnect)
         try:
-            conn, _ = server.accept()
-        except KeyboardInterrupt:
-            break
-        try:
-            conn.recv(64)
-            conn.sendall(b'ok')
-        except OSError:
-            pass
-        finally:
-            conn.close()
+            socket.recv()                         # await {'ready': 1}
+        except zmq.Again:
+            continue
+        step = 1
+        while True:
+            game_over = step >= EPISODE_LEN
+            socket.send(msgpack.packb(observation(step, game_over)))
+            try:
+                request = msgpack.unpackb(socket.recv())
+            except zmq.Again:
+                break                             # client gone -> back to await-ready
+            if request.get('ready') is not None:  # a fresh reset handshake
+                step = 1
+                continue
+            step = 1 if game_over else step + 1
 
 
 if __name__ == '__main__':
