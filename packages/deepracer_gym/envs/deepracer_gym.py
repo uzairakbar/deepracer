@@ -185,7 +185,12 @@ class DeepracerGymEnv(gym.Env):
 
         Releasing with cache=True keeps the container warm for a later env with a
         matching config to re-attach; cache=False stops+removes it. The default
-        is the value passed to the constructor, overridable here (§4.6, §4.11).
+        is the value passed to the constructor.
+
+        Note: gym.make wraps the env, and gymnasium's Wrapper.close() does not
+        forward kwargs, so `wrapped_env.close(cache=…)` raises. A plain
+        `env.close()` works and uses the constructor default; to override, use
+        `deepracer_gym.close(env, cache=…)` or `env.unwrapped.close(cache=…)`.
         '''
         if self._closed:
             return

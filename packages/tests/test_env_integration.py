@@ -96,6 +96,39 @@ def test_manage_container_false_starts_nothing(fake_image, fake_manager):
         env.close()
 
 
+def test_gym_make_wrapped_close_and_cache_override(fake_image, fake_manager):
+    # gym.make wraps the env; plain close() must work through wrappers, and the
+    # cache override must go via the deepracer_gym.close helper (kwargs don't
+    # forward through gymnasium Wrapper.close).
+    import gymnasium as gym
+    import deepracer_gym
+
+    env = gym.make('deepracer-v0', agent_config=AGENT, track_config=TRACK,
+                   image=fake_image, cpus=1.0, memory='512m', cache=True)
+    handle = env.unwrapped._handle
+    env.reset()
+    # wrapped close(cache=...) raises (documented limitation)
+    with pytest.raises(TypeError):
+        env.close(cache=False)
+    # helper overrides correctly -> container stopped despite cache=True default
+    deepracer_gym.close(env, cache=False)
+    assert not fake_manager.backend.is_alive(handle)
+
+
+def test_shutdown_all_reaps_cached(fake_image, fake_manager):
+    import gymnasium as gym
+    import deepracer_gym
+
+    env = gym.make('deepracer-v0', agent_config=AGENT, track_config=TRACK,
+                   image=fake_image, cpus=1.0, memory='512m', cache=True)
+    handle = env.unwrapped._handle
+    env.reset()
+    env.close()                                  # plain close keeps it warm
+    assert fake_manager.backend.is_alive(handle)
+    deepracer_gym.shutdown_all()                 # reclaim warm containers
+    assert not fake_manager.backend.is_alive(handle)
+
+
 def test_invalid_world_fails_before_container(fake_image, fake_manager):
     from deepracer_gym.envs.deepracer_gym import DeepracerGymEnv
     with pytest.raises(ValueError, match='Unknown WORLD_NAME'):
