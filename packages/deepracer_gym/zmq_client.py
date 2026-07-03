@@ -20,6 +20,12 @@ class DeepracerClientZMQ:
         # Large timout for first connection
         self.socket.set(zmq.SNDTIMEO, TIMEOUT_LONG)
         self.socket.set(zmq.RCVTIMEO, TIMEOUT_LONG)
+        # Do not block on close()/__del__ flushing an unsent request: if the sim
+        # is gone (or was never there) the queued message can never be delivered
+        # and the default infinite LINGER would hang teardown forever. In normal
+        # REQ/REP flow every request is already answered before close, so
+        # discarding on close loses nothing.
+        self.socket.set(zmq.LINGER, 0)
 
         self.socket.connect(f'tcp://{self.host}:{self.port}')
     
