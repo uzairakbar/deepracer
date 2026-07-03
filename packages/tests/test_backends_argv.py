@@ -42,19 +42,65 @@ def test_podman_argv_publishes_port_and_passes_env_and_labels():
     assert '-v' not in argv and '--volume' not in argv   # no mount
 
 
-def test_apptainer_argv_no_pwd_no_mount_has_overlay_and_env():
+def test_apptainer_argv_no_pwd_no_mount_no_env_in_argv():
     spec = make_spec(env_id=1)
-    argv = B.apptainer_run_argv(spec)
+    argv = B.apptainer_run_argv(spec, sif='/scratch/deepracer.sif')
     assert argv[:3] == ['apptainer', 'instance', 'run']
     assert '--pwd' not in argv                           # §9: PACE lacks it
     assert '--bind' not in argv                          # no config mount
+    assert '--env' not in argv                           # env goes via APPTAINERENV_*
     assert '--overlay' in argv
     assert spec.identity.overlay in argv
-    # env passed explicitly as one --env CSV (host env is inherited, §9 c82707f)
-    env_i = argv.index('--env')
-    assert f'GYM_PORT={spec.identity.port}' in argv[env_i + 1]
-    assert f'ROS_DOMAIN_ID={spec.identity.ros_domain_id}' in argv[env_i + 1]
-    assert argv[-2:] == [spec.image, spec.identity.name]
+    assert argv[-2:] == ['/scratch/deepracer.sif', spec.identity.name]
+
+
+def test_apptainer_env_uses_prefix_and_keeps_json_intact():
+    spec = make_spec(env_id=1)
+    env = B.apptainer_env(spec)
+    # each container var is exported prefixed; apptainer strips APPTAINERENV_
+    assert env[f'APPTAINERENV_GYM_PORT'] == str(spec.identity.port)
+    assert env['APPTAINERENV_ROS_DOMAIN_ID'] == str(spec.identity.ros_domain_id)
+    # the JSON config (which contains commas) survives verbatim — the reason we
+    # avoid a single --env CSV
+    payload = env['APPTAINERENV_DEEPRACER_AGENT_PARAMS']
+    import json as _json
+    assert _json.loads(payload) == AGENT
+    assert ',' in payload                                 # would break a CSV --env
+
+
+def test_resolve_sif_passes_through_sif_and_pulls_docker(monkeypatch, tmp_path):
+    rec = Recorder()
+    be = B.ApptainerBackend(executor=rec)
+    # a .sif path is used as-is (no pull)
+    assert be._resolve_sif('/some/path/x.sif') == '/some/path/x.sif'
+    assert rec.calls == []
+    # a docker name is pulled once to a cached sif under scratch
+    monkeypatch.setattr(be, '_scratch', lambda: str(tmp_path))
+    sif = be._resolve_sif('uzairakbar/deepracer-test:v0')
+    assert sif.startswith(str(tmp_path)) and sif.endswith('.sif')
+    assert rec.calls[0][:3] == ['apptainer', 'pull', '--force']
+    assert rec.calls[0][-1] == 'docker://uzairakbar/deepracer-test:v0'
+
+
+def test_apptainer_backend_start_uses_sif_and_apptainerenv(monkeypatch):
+    rec = Recorder()
+    be = B.ApptainerBackend(executor=rec)
+    monkeypatch.setattr(B.os, 'makedirs', lambda *a, **k: None)   # no real overlay
+    spec = make_spec(env_id=2, image='/scratch/deepracer.sif')    # .sif -> no pull
+    handle = be.start(spec)
+    assert handle.name == spec.identity.name
+    assert handle.overlay == spec.identity.overlay
+    # stop-if-exists, then instance run with the sif
+    assert rec.calls[0][:3] == ['apptainer', 'instance', 'stop']
+    assert rec.calls[1][:3] == ['apptainer', 'instance', 'run']
+    assert rec.calls[1][-2:] == ['/scratch/deepracer.sif', spec.identity.name]
+
+
+def test_detect_backend_env_override(monkeypatch):
+    monkeypatch.setenv('DEEPRACER_BACKEND', 'apptainer')
+    monkeypatch.setattr(B.ApptainerBackend, 'available', staticmethod(lambda: True))
+    monkeypatch.setattr(B.ApptainerBackend, '__init__', lambda self: None)
+    assert B.detect_backend().name == 'apptainer'
 
 
 # ---- CLI backends with an injected fake executor ----------------------------
@@ -108,17 +154,6 @@ def test_podman_is_alive_parses_inspect():
     rec = Recorder(outputs={'inspect': FakeResult(stdout='false\n')})
     be = B.PodmanBackend(executor=rec)
     assert be.is_alive(make_spec_handle()) is False
-
-
-def test_apptainer_backend_start_argv():
-    rec = Recorder()
-    be = B.ApptainerBackend(executor=rec)
-    spec = make_spec(env_id=2)
-    handle = be.start(spec)
-    assert handle.name == spec.identity.name
-    # stop-if-exists then instance run
-    assert rec.calls[0][:3] == ['apptainer', 'instance', 'stop']
-    assert rec.calls[1][:3] == ['apptainer', 'instance', 'run']
 
 
 def make_spec_handle():

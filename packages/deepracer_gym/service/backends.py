@@ -1,5 +1,8 @@
+import os
 import abc
+import glob
 import shutil
+import hashlib
 import subprocess
 from dataclasses import dataclass
 
@@ -19,6 +22,7 @@ class SimHandle:
     backend: str
     fingerprint: str
     env_id: int
+    overlay: str | None=None   # Apptainer per-instance overlay dir (cleaned on stop)
 
 
 class SimBackend(abc.ABC):
@@ -195,18 +199,25 @@ def podman_run_argv(spec: SimSpec, binary: str='podman') -> list[str]:
     return argv
 
 
-def apptainer_run_argv(spec: SimSpec, binary: str='apptainer') -> list[str]:
-    '''`apptainer instance run` argv — shared netns (needs §4.4 identity), no
-    `--pwd`, no config mount, per-instance overlay. Assumes a pulled SIF path is
-    the image (resolved by the backend); here `spec.image` is the SIF/URI.'''
-    env = spec_to_env(spec)
-    env_csv = ','.join(f'{k}={v}' for k, v in env.items())
+def apptainer_env(spec: SimSpec) -> dict[str, str]:
+    '''Container env for Apptainer, passed via `APPTAINERENV_*` host variables
+    (apptainer strips the prefix and injects `KEY=VALUE`). This is robust to
+    values containing commas/quotes — our `DEEPRACER_*` specs are JSON — unlike a
+    single `--env KEY=v,KEY2=v` CSV, whose commas the JSON would break.'''
+    return {f'APPTAINERENV_{k}': v for k, v in spec_to_env(spec).items()}
+
+
+def apptainer_run_argv(spec: SimSpec, sif: str, binary: str='apptainer') -> list[str]:
+    '''`apptainer instance run` argv. Shared netns → the sim binds identity.port
+    directly (GYM_PORT via `APPTAINERENV_*`, §4.4 identity too). No `--pwd` (PACE
+    lacks it), no config mount, per-instance overlay. `sif` is a resolved SIF
+    path (see ApptainerBackend._resolve_sif); env travels in the process env, not
+    argv.'''
     return [
         binary, 'instance', 'run',
         '--no-mount', 'home,tmp,/dev,/etc/hosts,/etc/localtime,/proc,/sys,/var/tmp',
         '--overlay', spec.identity.overlay,
-        '--env', env_csv,
-        spec.image, spec.identity.name,
+        sif, spec.identity.name,
     ]
 
 
@@ -279,20 +290,56 @@ class ApptainerBackend(_CliBackend):
     def available() -> bool:
         return shutil.which('apptainer') is not None
 
+    @staticmethod
+    def _scratch() -> str:
+        '''Where cached SIFs live: $SCRATCH, else ~/scratch, else /tmp (mirrors
+        the legacy start_deepracer.sh scratch resolution).'''
+        if os.environ.get('SCRATCH'):
+            return os.environ['SCRATCH']
+        home_scratch = os.path.expanduser('~/scratch')
+        return home_scratch if os.path.isdir(home_scratch) else '/tmp'
+
+    def _resolve_sif(self, image: str) -> str:
+        '''Apptainer needs a `.sif` file or a `docker://` URI, not a bare docker
+        name. A `.sif` path is used as-is; anything else is pulled ONCE to a
+        cached SIF under $SCRATCH and reused (one-time cost, like the old flow).'''
+        if image.endswith('.sif'):
+            return image
+        ref = image if image.startswith('docker://') else f'docker://{image}'
+        digest = hashlib.sha1(image.encode()).hexdigest()[:10]
+        sif = os.path.join(self._scratch(), f'deepracer-{digest}.sif')
+        if not os.path.exists(sif):
+            logger.info(f'[apptainer] pulling {ref} -> {sif} (one-time)')
+            result = _run([self.binary, 'pull', '--force', sif, ref], self._exec)
+            if result.returncode != 0:
+                raise RuntimeError(f'apptainer pull failed: {result.stderr.strip()}')
+        return sif
+
     def start(self, spec: SimSpec) -> SimHandle:
         _run([self.binary, 'instance', 'stop', spec.identity.name], self._exec)
-        result = _run(apptainer_run_argv(spec, self.binary), self._exec)
+        sif = self._resolve_sif(spec.image)
+        os.makedirs(spec.identity.overlay, exist_ok=True)
+        # config + identity travel via APPTAINERENV_* in the process env, robust
+        # to the JSON commas that a single --env CSV would mangle.
+        env = {**os.environ, **apptainer_env(spec)}
+        result = _run(
+            apptainer_run_argv(spec, sif, self.binary), self._exec, env=env,
+        )
         if result.returncode != 0:
+            shutil.rmtree(spec.identity.overlay, ignore_errors=True)
             raise RuntimeError(f'apptainer instance run failed: {result.stderr.strip()}')
         logger.info(f'[apptainer] started {spec.identity.name} (port {spec.identity.port})')
         return SimHandle(
             id=spec.identity.name, name=spec.identity.name,
             port=spec.identity.port, backend=self.name,
             fingerprint=spec.fingerprint, env_id=spec.identity.env_id,
+            overlay=spec.identity.overlay,
         )
 
     def stop(self, handle: SimHandle) -> None:
         _run([self.binary, 'instance', 'stop', handle.name], self._exec)
+        if handle.overlay:
+            shutil.rmtree(handle.overlay, ignore_errors=True)
 
     def is_alive(self, handle: SimHandle) -> bool:
         result = _run(
@@ -308,18 +355,30 @@ class ApptainerBackend(_CliBackend):
         return any(i.get('instance') == handle.name for i in instances)
 
     def logs(self, handle: SimHandle) -> str:
-        # apptainer writes instance logs under ~/.apptainer; best-effort empty.
-        return ''
+        '''Read the instance's stdout/stderr logs (for FATAL detection + debug).
+        Apptainer writes them under ~/.apptainer/instances/logs/<host>/<user>/.'''
+        base = os.path.expanduser('~/.apptainer/instances/logs')
+        text = ''
+        for suffix in ('out', 'err'):
+            for path in glob.glob(os.path.join(base, '*', '*', f'{handle.name}.{suffix}')):
+                try:
+                    text += open(path).read()
+                except OSError:
+                    pass
+        return text
 
-    # Apptainer has no label store; cache reuse is disabled for the first cut
-    # (find_idle -> None inherited), so it always starts fresh (§4.2 note).
+    # Apptainer instances carry no label store, so cache reuse is disabled for
+    # the first cut (find_idle -> None inherited): cache=True simply starts fresh
+    # on Apptainer, which is safe. (Podman/Docker get full cache reuse.)
 
 
 BACKENDS: list[type[SimBackend]] = [DockerBackend, PodmanBackend, ApptainerBackend]
 
 
 def detect_backend(prefer: str | None=None) -> SimBackend:
-    '''Pick a runtime: explicit `prefer`, else Docker → Podman → Apptainer.'''
+    '''Pick a runtime: explicit `prefer` (or the `DEEPRACER_BACKEND` env var),
+    else auto-detect Docker → Podman → Apptainer.'''
+    prefer = prefer or os.environ.get('DEEPRACER_BACKEND')
     by_name = {b.name: b for b in BACKENDS}
     if prefer:
         cls = by_name.get(prefer)
