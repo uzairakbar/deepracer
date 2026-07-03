@@ -1,6 +1,8 @@
 import os
+import weakref
 import numpy as np
 import gymnasium as gym
+from pathlib import Path
 from loguru import logger
 from gymnasium import spaces
 from typing import TypeAlias, Callable
@@ -11,24 +13,41 @@ from deepracer_gym.envs.utils import (
     make_action_space,
     make_observation_space,
     num_channels,
-    string_to_port
 )
-from deepracer_gym.defaults import default_reward_function
+from deepracer_gym.defaults import (
+    default_reward_function, resolve_agent_config, resolve_track_config,
+)
+from deepracer_gym.service.spec import DEFAULT_IMAGE
+# validate_configs is imported lazily in __init__ to avoid an import cycle
+# (service.validate -> envs.utils -> envs.__init__ -> this module).
 
 
 ActionType: TypeAlias=(int | np.ndarray | list[float])
 HOST: str='127.0.0.1'
 DEFAULT_PORT: int=8888
-# Resolve the gym-server port the way scripts/start_deepracer.sh assigns it: a
-# per-user hash of $USER, which both the Docker and Apptainer paths publish/bind
-# to. An explicit GYM_PORT env var overrides; fall back to DEFAULT_PORT.
-try:
+
+
+def _default_port() -> int:
+    '''Port for the connect-only (manage_container=False) path: GYM_PORT env, else
+    a per-user hash (back-compat with the bash scripts), else DEFAULT_PORT.'''
     if 'GYM_PORT' in os.environ:
-        port = int(os.environ['GYM_PORT'])
-    else:
-        port = string_to_port(os.environ['USER'])
-except Exception:
-    port = DEFAULT_PORT
+        try:
+            return int(os.environ['GYM_PORT'])
+        except ValueError:
+            pass
+    try:
+        from deepracer_gym.service.identity import string_to_port, current_user
+        return string_to_port(current_user())
+    except Exception:
+        return DEFAULT_PORT
+
+
+def _release(manager, handle, cache):
+    '''Module-level finalizer target (must not hold a ref to the env instance).'''
+    try:
+        manager.release(handle, cache=cache)
+    except Exception:
+        pass
 
 
 class DeepracerGymEnv(gym.Env):
@@ -38,30 +57,75 @@ class DeepracerGymEnv(gym.Env):
     }
     def __init__(
             self,
-            host: str=HOST,
-            port: int=port,
-            render_mode: str='rgb_array',
+            agent_config: dict | str | Path | None=None,
+            track_config: dict | str | Path | None=None,
             reward_function: Callable | None=None,
+            world_name: str | None=None,
+            evaluation: bool=False,
+            render_mode: str='rgb_array',
+            image: str | None=None,
+            cpus: float=3.0,
+            memory: str='6g',
+            cache: bool=False,
+            manage_container: bool=True,
+            host: str=HOST,
+            port: int | None=None,
             **kwargs
         ):
         super().__init__(**kwargs)
-        logger.info(
-            f'Using to port {port} for deepracer server.'
-        )
         self.render_mode = render_mode
-        self.action_space, self._action_metadata = make_action_space()
-        self.observation_space, self._observation_metadata = make_observation_space()
+
+        # --- normalize + validate configs (fail fast, before any container) ---
+        agent_config = resolve_agent_config(agent_config)
+        track_config = resolve_track_config(track_config)
+        # non-eval world_name overrides the track's WORLD_NAME (§4.6 routing);
+        # eval mode routes it to EVAL_WORLD_NAME via the manager/spec instead.
+        if world_name and not evaluation:
+            track_config = {**track_config, 'WORLD_NAME': world_name}
+        from deepracer_gym.service.validate import validate_configs
+        validate_configs(
+            agent_config, track_config, world_name=world_name, evaluation=evaluation,
+        )
+
+        # --- spaces come straight from the agent_config dict ------------------
+        self.action_space, self._action_metadata = make_action_space(agent_config)
+        self.observation_space, self._observation_metadata = make_observation_space(agent_config)
         self.reward_function = (
             reward_function if reward_function is not None
             else default_reward_function()
         )
-        
+
+        # --- provision (or attach to) the sim container -----------------------
+        self._cache = cache
+        self._manager = None
+        self._handle = None
+        self._finalizer = None
+        self._closed = False
+
+        if manage_container:
+            from deepracer_gym.service.manager import SimulationManager
+            self._manager = SimulationManager.instance()
+            self._handle = self._manager.acquire(
+                agent_config=agent_config, track_config=track_config,
+                image=image or DEFAULT_IMAGE, cpus=cpus, memory=memory,
+                evaluation=evaluation, world_name=world_name, cache=cache,
+            )
+            connect_port = self._handle.port
+            # safety net for a forgotten close(); the documented API is close().
+            self._finalizer = weakref.finalize(
+                self, _release, self._manager, self._handle, cache,
+            )
+        else:
+            connect_port = port if port is not None else _default_port()
+
+        logger.info(f'Using port {connect_port} for deepracer server.')
+
         if isinstance(self.action_space, spaces.Discrete):
             action_space_type='discrete'
         elif isinstance(self.action_space, spaces.Box):
             action_space_type = 'continuous'
         self.deepracer_gym_adapter = DeepracerGymAdapter(
-            action_space_type, host=host, port=port
+            action_space_type, host=host, port=connect_port
         )
     
     def reset(self, **kwargs):
@@ -115,3 +179,30 @@ class DeepracerGymEnv(gym.Env):
             plt.axis('off')
         elif mode == 'rgb_array':
             return np.asarray(measurement)
+
+    def close(self, cache: bool | None=None):
+        '''Close the ZMQ client and release the sim container. Idempotent.
+
+        Releasing with cache=True keeps the container warm for a later env with a
+        matching config to re-attach; cache=False stops+removes it. The default
+        is the value passed to the constructor, overridable here (§4.6, §4.11).
+        '''
+        if self._closed:
+            return
+        self._closed = True
+        try:
+            self.deepracer_gym_adapter.zmq_client.socket.close()
+        except Exception:
+            pass
+        if self._manager is not None and self._handle is not None:
+            use_cache = self._cache if cache is None else cache
+            if self._finalizer is not None:
+                self._finalizer.detach()
+            self._manager.release(self._handle, cache=use_cache)
+        super().close()
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.close()
