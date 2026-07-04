@@ -10,35 +10,26 @@ cd P4_deepracer
 
 ## Setup and Install Dependencies
 This project requires the following to work.
-- Docker or Apptainer.
-- Conda (or Python 3.10 or higher).
-- Linux or Windows machine with an **Intel CPU**.
+- A container runtime: Docker, Podman or Apptainer (rootless on HPC, e.g. PACE).
+- Python 3.10 or higher (we use [`uv`](https://astral.sh/uv) to manage the environment).
 
 Please see the detailed setup instructions in [`SETUP.md`](https://github.gatech.edu/rldm/P4_deepracer/blob/main/SETUP.md).
 
 ## Usage
-
-Launch the DeepRacer simulation.
-```bash
-source scripts/start_deepracer.sh \
-    [-C=MAX_CPU; default="3"] \
-    [-M=MAX_MEMORY; default="6g"]
-
-# example:
-# source scripts/start_deepracer.sh -C "3" -M "6g"
-```
-
-Interact with the environment via `gymnasium`.
 ```python
 import gymnasium as gym
 import deepracer_gym
 
-env = gym.make('deepracer-v0')
+env = gym.make('deepracer-v0')          # starts a simulator on demand
 
 observation, info = env.reset()
 
 observation, reward, terminated, truncated, info = env.step(
     env.action_space.sample()
 )
+
+env.close()                             # stops and removes the simulator
 ```
-See the [packages directory](https://github.gatech.edu/rldm/P4_deepracer/tree/main/packages) and the [`usage.ipynb`](https://github.gatech.edu/rldm/P4_deepracer/tree/main/usage.ipynb) notebook for details.
+
+See the [`packages/`](packages/) directory and the
+[`usage.ipynb`](usage.ipynb) notebook for details.
