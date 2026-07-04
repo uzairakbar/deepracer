@@ -185,6 +185,29 @@ def _run(argv: list[str], executor=subprocess.run, **kwargs):
     return executor(argv, capture_output=True, text=True, **kwargs)
 
 
+def qualify_image(image: str) -> str:
+    '''Fully qualify a bare Docker short name with the `docker.io` registry.
+
+    Found on PACE, 2026-07-04: Podman there runs with `short-name-mode =
+    "enforcing"` and several `unqualified-search-registries`, so a bare name
+    like `uzairakbar/deepracer-test:v0` cannot be resolved without a TTY to
+    prompt for which registry to use — `podman run` fails in a Jupyter kernel
+    with "short-name resolution enforced but cannot prompt without a TTY". (It
+    only worked before when the image happened to be cached in local storage.)
+    Docker's daemon defaults to docker.io implicitly and the Apptainer backend
+    prepends `docker://`; Podman does neither, so qualify it here.
+
+    A reference is already qualified if its first path component looks like a
+    registry host (contains `.` or `:`, or is `localhost`); a `.sif`/`docker://`
+    /absolute reference is not a Docker short name and is left alone.'''
+    if image.endswith('.sif') or image.startswith(('docker://', '/', './')):
+        return image
+    first = image.split('/', 1)[0]
+    if '/' in image and ('.' in first or ':' in first or first == 'localhost'):
+        return image                       # already registry-qualified
+    return f'docker.io/{image}'
+
+
 def podman_run_argv(spec: SimSpec, binary: str='podman') -> list[str]:
     '''`podman run` argv — Docker-compatible flags; own netns → publish port.'''
     argv = [
@@ -196,7 +219,7 @@ def podman_run_argv(spec: SimSpec, binary: str='podman') -> list[str]:
         argv += ['--label', f'{key}={value}']
     for key, value in spec_to_env(spec, gym_port=INTERNAL_PORT).items():
         argv += ['--env', f'{key}={value}']
-    argv.append(spec.image)
+    argv.append(qualify_image(spec.image))
     return argv
 
 

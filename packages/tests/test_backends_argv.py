@@ -37,9 +37,26 @@ def test_podman_argv_publishes_port_and_passes_env_and_labels():
     assert f'GYM_PORT={INTERNAL_PORT}' in joined
     assert 'DEEPRACER_AGENT_PARAMS=' in joined
     assert f'{LABEL_NS}.fingerprint={spec.fingerprint}' in joined
-    assert argv[-1] == spec.image                       # image is last
+    # image is last, and a bare short name is docker.io-qualified so Podman's
+    # enforcing short-name-mode can't stall on a no-TTY registry prompt (§PACE)
+    assert argv[-1] == B.qualify_image(spec.image)
     assert '--pwd' not in argv                           # never
     assert '-v' not in argv and '--volume' not in argv   # no mount
+
+
+def test_qualify_image_only_touches_bare_short_names():
+    # bare short name -> docker.io-qualified (Podman enforcing short-name-mode)
+    assert B.qualify_image('uzairakbar/deepracer-test:v0') == \
+        'docker.io/uzairakbar/deepracer-test:v0'
+    assert B.qualify_image('alpine') == 'docker.io/alpine'
+    # already-qualified / local / non-docker refs are left alone
+    assert B.qualify_image('docker.io/uzairakbar/x:v0') == 'docker.io/uzairakbar/x:v0'
+    assert B.qualify_image('registry.example.com:5000/x:v0') == \
+        'registry.example.com:5000/x:v0'
+    assert B.qualify_image('localhost/x:v0') == 'localhost/x:v0'
+    assert B.qualify_image('quay.io/org/x') == 'quay.io/org/x'
+    assert B.qualify_image('/scratch/deepracer.sif') == '/scratch/deepracer.sif'
+    assert B.qualify_image('docker://uzairakbar/x:v0') == 'docker://uzairakbar/x:v0'
 
 
 def test_apptainer_argv_no_pwd_no_mount_no_env_in_argv():
