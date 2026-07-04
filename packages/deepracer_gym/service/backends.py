@@ -1,5 +1,6 @@
 import os
 import abc
+import json
 import glob
 import shutil
 import hashlib
@@ -315,8 +316,35 @@ class ApptainerBackend(_CliBackend):
                 raise RuntimeError(f'apptainer pull failed: {result.stderr.strip()}')
         return sif
 
+    def _instance_exists(self, name: str) -> bool:
+        result = _run([self.binary, 'instance', 'list', '--json'], self._exec)
+        if result.returncode != 0:
+            return False
+        try:
+            instances = json.loads(result.stdout).get('instances', [])
+        except Exception:
+            return False
+        return any(i.get('instance') == name for i in instances)
+
     def start(self, spec: SimSpec) -> SimHandle:
-        _run([self.binary, 'instance', 'stop', spec.identity.name], self._exec)
+        # Only stop a genuinely pre-existing stale instance of this name (found
+        # on PACE, 2026-07-04): calling `instance stop` unconditionally -- even
+        # when there is nothing to stop -- races with the `instance run` that
+        # follows and can kill the brand-new instance within milliseconds of
+        # start (observed as the fresh container's own Python interpreter dying
+        # with a SIGINT/rc=130 during its own site-module import). Skipping the
+        # no-op stop call removes that race entirely.
+        if self._instance_exists(spec.identity.name):
+            _run([self.binary, 'instance', 'stop', spec.identity.name], self._exec)
+        # Apptainer never rotates its per-name log files (see _log_paths) -- a
+        # stale FATAL: line from a PAST run of this same name would otherwise
+        # make _wait_ready's health check fail the brand-new container on its
+        # very first poll. Clear them so this run starts from a clean slate.
+        for path in self._log_paths(spec.identity.name):
+            try:
+                os.remove(path)
+            except OSError:
+                pass
         sif = self._resolve_sif(spec.image)
         os.makedirs(spec.identity.overlay, exist_ok=True)
         # config + identity travel via APPTAINERENV_* in the process env, robust
@@ -342,29 +370,32 @@ class ApptainerBackend(_CliBackend):
             shutil.rmtree(handle.overlay, ignore_errors=True)
 
     def is_alive(self, handle: SimHandle) -> bool:
-        result = _run(
-            [self.binary, 'instance', 'list', '--json'], self._exec,
-        )
-        if result.returncode != 0:
-            return False
-        import json
-        try:
-            instances = json.loads(result.stdout).get('instances', [])
-        except Exception:
-            return False
-        return any(i.get('instance') == handle.name for i in instances)
+        return self._instance_exists(handle.name)
+
+    @staticmethod
+    def _log_paths(name: str) -> list[str]:
+        '''Apptainer writes instance logs under ~/.apptainer/instances/logs/
+        <host>/<user>/<name>.{out,err} and -- unlike Docker/Podman -- NEVER
+        rotates or truncates them: every future `instance run` of the same
+        name keeps appending to the same file. Found on PACE, 2026-07-04: a
+        past run's `FATAL:` marker (even from an ordinary graceful stop, which
+        the entrypoint's TERM/INT trap also logs as "FATAL: ... terminating
+        container") permanently poisons `logs()` for every later start of that
+        name -- `_wait_ready`'s very first poll sees the stale line and kills
+        the brand-new container within milliseconds. `start()` clears these
+        before launching so each run gets a clean slate.'''
+        base = os.path.expanduser('~/.apptainer/instances/logs')
+        return glob.glob(os.path.join(base, '*', '*', f'{name}.out')) + \
+            glob.glob(os.path.join(base, '*', '*', f'{name}.err'))
 
     def logs(self, handle: SimHandle) -> str:
-        '''Read the instance's stdout/stderr logs (for FATAL detection + debug).
-        Apptainer writes them under ~/.apptainer/instances/logs/<host>/<user>/.'''
-        base = os.path.expanduser('~/.apptainer/instances/logs')
+        '''Read the instance's stdout/stderr logs (for FATAL detection + debug).'''
         text = ''
-        for suffix in ('out', 'err'):
-            for path in glob.glob(os.path.join(base, '*', '*', f'{handle.name}.{suffix}')):
-                try:
-                    text += open(path).read()
-                except OSError:
-                    pass
+        for path in self._log_paths(handle.name):
+            try:
+                text += open(path).read()
+            except OSError:
+                pass
         return text
 
     # Apptainer instances carry no label store, so cache reuse is disabled for

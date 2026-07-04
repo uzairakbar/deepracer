@@ -4,9 +4,11 @@
 
 Removes any managed containers (Docker/Podman) and Apptainer instances left
 running (e.g. cache=True warm sims, or leftovers from a crashed kernel), plus
-their per-instance overlays. Best-effort and idempotent — safe to run anytime.
-It does NOT touch the uv/venv (that stays a separate manual concern).
+their per-instance overlays and Apptainer's never-rotated instance logs. Best-
+effort and idempotent — safe to run anytime. It does NOT touch the uv/venv
+(that stays a separate manual concern).
 """
+import os
 import glob
 import json
 import shutil
@@ -45,7 +47,19 @@ def _clean_apptainer() -> None:
         _run(['apptainer', 'instance', 'stop', name])
     for overlay in glob.glob('/tmp/deepracer_*'):
         shutil.rmtree(overlay, ignore_errors=True)
-    print(f'apptainer: stopped {len(names)} instance(s) and cleared overlays.')
+    # Apptainer never rotates its per-instance logs; they accumulate forever and
+    # a stale FATAL: line poisons a later start of the same name (the backend
+    # clears these per-name on start, but sweep leftovers here too).
+    log_base = os.path.expanduser('~/.apptainer/instances/logs')
+    logs = glob.glob(os.path.join(log_base, '*', '*', 'deepracer-*.out')) + \
+        glob.glob(os.path.join(log_base, '*', '*', 'deepracer-*.err'))
+    for path in logs:
+        try:
+            os.remove(path)
+        except OSError:
+            pass
+    print(f'apptainer: stopped {len(names)} instance(s), cleared overlays + '
+          f'{len(logs)} stale log file(s).')
 
 
 def main() -> None:

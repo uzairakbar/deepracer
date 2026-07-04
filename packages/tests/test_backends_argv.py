@@ -90,10 +90,42 @@ def test_apptainer_backend_start_uses_sif_and_apptainerenv(monkeypatch):
     handle = be.start(spec)
     assert handle.name == spec.identity.name
     assert handle.overlay == spec.identity.overlay
-    # stop-if-exists, then instance run with the sif
-    assert rec.calls[0][:3] == ['apptainer', 'instance', 'stop']
+    # no pre-existing instance (default Recorder output isn't valid JSON, so
+    # _instance_exists -> False) -> presence check, then straight to instance run,
+    # NO stop call. §PACE 2026-07-04: an unconditional stop-before-run raced with
+    # the fresh instance and could kill it within milliseconds of start.
+    assert rec.calls[0][:4] == ['apptainer', 'instance', 'list', '--json']
     assert rec.calls[1][:3] == ['apptainer', 'instance', 'run']
     assert rec.calls[1][-2:] == ['/scratch/deepracer.sif', spec.identity.name]
+    assert all(call[:3] != ['apptainer', 'instance', 'stop'] for call in rec.calls)
+
+
+def test_apptainer_backend_start_stops_a_genuinely_stale_instance(monkeypatch):
+    spec = make_spec(env_id=2, image='/scratch/deepracer.sif')
+    listing = FakeResult(stdout=f'{{"instances": [{{"instance": "{spec.identity.name}"}}]}}')
+    rec = Recorder(outputs={'--json': listing})
+    be = B.ApptainerBackend(executor=rec)
+    monkeypatch.setattr(B.os, 'makedirs', lambda *a, **k: None)
+    be.start(spec)
+    # instance IS listed as already present -> stop it before the fresh run
+    assert rec.calls[0][:4] == ['apptainer', 'instance', 'list', '--json']
+    assert rec.calls[1][:3] == ['apptainer', 'instance', 'stop']
+    assert rec.calls[2][:3] == ['apptainer', 'instance', 'run']
+
+
+def test_apptainer_backend_start_clears_stale_logs(monkeypatch):
+    # §PACE 2026-07-04: apptainer never rotates its per-name log files, so a
+    # past run's FATAL: line poisons _wait_ready. start() must delete them.
+    spec = make_spec(env_id=2, image='/scratch/deepracer.sif')
+    rec = Recorder()
+    be = B.ApptainerBackend(executor=rec)
+    monkeypatch.setattr(B.os, 'makedirs', lambda *a, **k: None)
+    stale = [f'/logs/{spec.identity.name}.out', f'/logs/{spec.identity.name}.err']
+    monkeypatch.setattr(be, '_log_paths', lambda name: stale)
+    removed = []
+    monkeypatch.setattr(B.os, 'remove', lambda p: removed.append(p))
+    be.start(spec)
+    assert removed == stale                              # both stale logs cleared
 
 
 def test_detect_backend_env_override(monkeypatch):
