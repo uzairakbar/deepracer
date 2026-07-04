@@ -1,0 +1,86 @@
+name: build-and-push deepracer service image
+
+# Builds the pure-simulation image by applying deepracer/service/patches/ onto the
+# pinned upstream submodule (deepracer/service/upstream @ v6.0.5), for amd64 and
+# arm64 on native runners (no emulation), pushes per-arch tags, then stitches a
+# multi-arch manifest so `docker pull <image>:<tag>` auto-selects the host arch.
+#
+# The whole "assemble (upstream + patches) + build" is encapsulated in
+# deepracer/service/scripts/build.sh, so CI and local docker builds run the same path.
+#
+# Required repo secrets:
+#   DOCKERHUB_USERNAME  - Docker Hub user
+#   DOCKERHUB_TOKEN     - Docker Hub access token (write scope)
+
+on:
+  workflow_dispatch:
+    inputs:
+      image:
+        description: "Image repository (no tag)"
+        default: uzairakbar/deepracer-test
+      tag:
+        description: "Image tag"
+        default: v0
+
+env:
+  IMAGE: ${{ github.event.inputs.image || 'uzairakbar/deepracer-test' }}
+  TAG: ${{ github.event.inputs.tag || 'v0' }}
+
+jobs:
+  build:
+    name: build ${{ matrix.arch }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - arch: amd64
+            runner: ubuntu-24.04
+          - arch: arm64
+            runner: ubuntu-24.04-arm
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 180
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive          # vendors deepracer/service/upstream @ the pin
+
+      - name: Free disk space
+        uses: jlumbroso/free-disk-space@main
+        with:
+          tool-cache: true
+          android: true
+          dotnet: true
+          haskell: true
+          large-packages: true
+          swap-storage: false
+
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Assemble (upstream + patches) and build & push per-arch image
+        env:
+          ARCH: ${{ matrix.arch }}
+          OUT_IMAGE: ${{ env.IMAGE }}:${{ env.TAG }}-${{ matrix.arch }}
+          PUSH: "1"
+        run: ./deepracer/service/scripts/build.sh
+
+  manifest:
+    name: multi-arch manifest
+    needs: build
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Create and push manifest
+        run: |
+          docker buildx imagetools create -t "${IMAGE}:${TAG}" \
+            "${IMAGE}:${TAG}-amd64" \
+            "${IMAGE}:${TAG}-arm64"
+          docker buildx imagetools inspect "${IMAGE}:${TAG}"

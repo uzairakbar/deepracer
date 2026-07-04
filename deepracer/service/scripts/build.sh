@@ -13,7 +13,7 @@ git -C "$SERVICE/upstream" archive HEAD | tar -x -C "$BUILD"
 git -C "$BUILD" init -q
 git -C "$BUILD" add -A
 git -C "$BUILD" -c user.email=ci@local -c user.name=ci commit -qm base
-git -C "$BUILD" am --3way "$SERVICE"/patches/*.patch >/dev/null
+git -C "$BUILD" -c user.email=ci@local -c user.name=ci am --3way "$SERVICE"/patches/*.patch >/dev/null
 
 echo "==> building in $BUILD (ARCH=${ARCH:-native} OUT_IMAGE=${OUT_IMAGE:-default} PUSH=${PUSH:-0})"
 ( cd "$BUILD" && ./build-zmqsim.sh )
