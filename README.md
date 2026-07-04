@@ -31,5 +31,5 @@ observation, reward, terminated, truncated, info = env.step(
 env.close()                             # stops and removes the simulator
 ```
 
-See the [`packages/`](packages/) directory and the
+See the [`deepracer/client/`](deepracer/client/) directory and the
 [`usage.ipynb`](usage.ipynb) notebook for details.
