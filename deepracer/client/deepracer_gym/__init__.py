@@ -6,16 +6,15 @@ register(
 )
 
 
-def close(env, keep_warm: bool=False):
-    '''Close a (possibly gym.make-wrapped) DeepRacer env, optionally keeping the
-    container warm.
+def close(env, cache: bool | None=None):
+    '''Close a (possibly gym.make-wrapped) DeepRacer env, overriding its cache flag.
 
-    `gym.make` wraps the env, and gymnasium's `Wrapper.close()` does not forward
-    keyword arguments, so `wrapped_env.close(keep_warm=True)` raises. Use this
-    helper (or `env.unwrapped.close(keep_warm=…)`) to keep the container warm at
-    close. A plain `env.close()` always works and stops+removes the container.
+    The container's fate is normally the env's `cache` flag (set at gym.make), and a
+    plain `env.close()` already honors it through the wrapper. Use this helper (or
+    `env.unwrapped.close(cache=…)`) only to *override* that decision at close time —
+    e.g. `deepracer_gym.close(env, cache=False)` to force-stop a cache=True env.
     '''
-    env.unwrapped.close(keep_warm=keep_warm)
+    env.unwrapped.close(cache=cache)
 
 
 def shutdown_all():

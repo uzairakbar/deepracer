@@ -70,19 +70,19 @@ def test_context_manager_closes(fake_image, fake_manager):
     assert fake_manager._live == {}
 
 
-def test_env_keep_warm_reuses_in_process(fake_image, fake_manager):
-    env1 = _env(fake_image)
+def test_env_cache_reuses_in_process(fake_image, fake_manager):
+    env1 = _env(fake_image, cache=True)
     handle_name = env1._handle.name
     env1.reset()
-    env1.close(keep_warm=True)                     # pooled for same-process reuse
+    env1.close()                                   # cache=True -> pooled for reuse
     assert fake_manager.backend.is_alive(env1._handle)
 
-    env2 = _env(fake_image)
+    env2 = _env(fake_image)                         # cache=False (reads pool anyway)
     try:
-        assert env2._handle.name == handle_name   # re-attached the warm container
+        assert env2._handle.name == handle_name    # re-attached the warm container
         env2.reset()
     finally:
-        env2.close()                               # default -> stop + remove
+        env2.close()                               # cache=False -> stop + remove
     assert not fake_manager.backend.is_alive(env2._handle)
 
 
@@ -96,36 +96,31 @@ def test_manage_container_false_starts_nothing(fake_image, fake_manager):
         env.close()
 
 
-def test_gym_make_wrapped_close_and_keep_warm_override(fake_image, fake_manager):
-    # gym.make wraps the env; plain close() must work through wrappers, and the
-    # keep_warm override must go via the deepracer_gym.close helper (kwargs don't
-    # forward through gymnasium Wrapper.close).
+def test_gym_make_cache_close_through_wrapper_keeps_warm(fake_image, fake_manager):
+    # THE item-5 win: cache is a constructor arg (forwarded by gym.make), so a plain
+    # env.close() *through the wrapper* honors cache=True and keeps the container
+    # warm -- no .unwrapped needed. shutdown_all then reclaims it.
     import gymnasium as gym
     import deepracer_gym
 
     env = gym.make('deepracer-v0', agent_config=AGENT, track_config=TRACK,
-                   image=fake_image, cpus=1.0, memory='512m')
+                   image=fake_image, cpus=1.0, memory='512m', cache=True)
     handle = env.unwrapped._handle
     env.reset()
-    # wrapped close(keep_warm=...) raises (documented limitation)
-    with pytest.raises(TypeError):
-        env.close(keep_warm=True)
-    # helper stops+removes by default despite the wrapper
-    deepracer_gym.close(env)
+    env.close()                                  # wrapper close, no kwargs -> honors cache=True
+    assert fake_manager.backend.is_alive(handle)
+    deepracer_gym.shutdown_all()                 # reclaim warm containers
     assert not fake_manager.backend.is_alive(handle)
 
 
-def test_shutdown_all_reaps_warm(fake_image, fake_manager):
-    import gymnasium as gym
+def test_close_cache_override_stops_a_cache_true_env(fake_image, fake_manager):
+    # override the make-time cache at close via the helper (unwrapped path).
     import deepracer_gym
 
-    env = gym.make('deepracer-v0', agent_config=AGENT, track_config=TRACK,
-                   image=fake_image, cpus=1.0, memory='512m')
-    handle = env.unwrapped._handle
+    env = _env(fake_image, cache=True)
+    handle = env._handle
     env.reset()
-    deepracer_gym.close(env, keep_warm=True)     # keep it warm (via the helper)
-    assert fake_manager.backend.is_alive(handle)
-    deepracer_gym.shutdown_all()                 # reclaim warm containers
+    deepracer_gym.close(env, cache=False)        # override -> stop despite cache=True
     assert not fake_manager.backend.is_alive(handle)
 
 

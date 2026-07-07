@@ -41,12 +41,12 @@ def _default_port() -> int:
         return DEFAULT_PORT
 
 
-def _release(manager, handle):
+def _release(manager, handle, keep_warm):
     '''Module-level finalizer target (must not hold a ref to the env instance).
-    A forgotten close() / GC always stops+removes the container (safe default);
-    keeping warm is an explicit choice made at close() time.'''
+    Honors the env's cache flag: a forgotten close() / GC on a cache=True env
+    keeps it warm (reaped at process exit by shutdown_all), else stops+removes.'''
     try:
-        manager.release(handle, keep_warm=False)
+        manager.release(handle, keep_warm=keep_warm)
     except Exception:
         pass
 
@@ -67,6 +67,7 @@ class DeepracerGymEnv(gym.Env):
             image: str | None=None,
             cpus: float=3.0,
             memory: str='6g',
+            cache: bool=False,
             manage_container: bool=True,
             host: str=HOST,
             port: int | None=None,
@@ -96,6 +97,7 @@ class DeepracerGymEnv(gym.Env):
         )
 
         # --- provision (or attach to) the sim container -----------------------
+        self._cache = cache
         self._manager = None
         self._handle = None
         self._finalizer = None
@@ -112,7 +114,7 @@ class DeepracerGymEnv(gym.Env):
             connect_port = self._handle.port
             # safety net for a forgotten close(); the documented API is close().
             self._finalizer = weakref.finalize(
-                self, _release, self._manager, self._handle,
+                self, _release, self._manager, self._handle, self._cache,
             )
         else:
             connect_port = port if port is not None else _default_port()
@@ -179,18 +181,19 @@ class DeepracerGymEnv(gym.Env):
         elif mode == 'rgb_array':
             return np.asarray(measurement)
 
-    def close(self, keep_warm: bool=False):
+    def close(self, cache: bool | None=None):
         '''Close the ZMQ client and release the sim container. Idempotent.
 
-        By default the container is stopped and removed. Pass keep_warm=True to
-        keep it warm so a later env in *this same process* with a matching config
-        re-attaches (faster boot); a warm container does NOT survive process exit.
+        The container's fate is the env's `cache` flag (set at gym.make): with
+        cache=True it is kept warm so a later env in *this same process* with a
+        matching config re-attaches (faster boot); with cache=False (default) it
+        is stopped and removed. A warm container does NOT survive process exit.
+        Pass cache=… here only to override the constructor value at close time.
 
-        Note: gym.make wraps the env, and gymnasium's Wrapper.close() does not
-        forward kwargs, so `wrapped_env.close(keep_warm=True)` raises. A plain
-        `env.close()` works (stops+removes); to keep it warm through the wrapper
-        use `deepracer_gym.close(env, keep_warm=True)` or
-        `env.unwrapped.close(keep_warm=True)`.
+        Because `cache` is a constructor argument, gym.make forwards it, so a
+        plain `env.close()` (through the gym.make wrapper) honors it — no
+        `.unwrapped` needed. The override path still needs the unwrapped env:
+        `deepracer_gym.close(env, cache=False)` or `env.unwrapped.close(cache=…)`.
         '''
         if self._closed:
             return
@@ -200,9 +203,10 @@ class DeepracerGymEnv(gym.Env):
         except Exception:
             pass
         if self._manager is not None and self._handle is not None:
+            use_cache = self._cache if cache is None else cache
             if self._finalizer is not None:
                 self._finalizer.detach()
-            self._manager.release(self._handle, keep_warm=keep_warm)
+            self._manager.release(self._handle, keep_warm=use_cache)
         super().close()
 
     def __enter__(self):
