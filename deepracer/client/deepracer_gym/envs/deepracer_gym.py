@@ -41,10 +41,12 @@ def _default_port() -> int:
         return DEFAULT_PORT
 
 
-def _release(manager, handle, cache):
-    '''Module-level finalizer target (must not hold a ref to the env instance).'''
+def _release(manager, handle):
+    '''Module-level finalizer target (must not hold a ref to the env instance).
+    A forgotten close() / GC always stops+removes the container (safe default);
+    keeping warm is an explicit choice made at close() time.'''
     try:
-        manager.release(handle, cache=cache)
+        manager.release(handle, keep_warm=False)
     except Exception:
         pass
 
@@ -65,7 +67,6 @@ class DeepracerGymEnv(gym.Env):
             image: str | None=None,
             cpus: float=3.0,
             memory: str='6g',
-            cache: bool=False,
             manage_container: bool=True,
             host: str=HOST,
             port: int | None=None,
@@ -77,7 +78,7 @@ class DeepracerGymEnv(gym.Env):
         # --- normalize + validate configs (fail fast, before any container) ---
         agent_config = resolve_agent_config(agent_config)
         track_config = resolve_track_config(track_config)
-        # non-eval world_name overrides the track's WORLD_NAME (§4.6 routing);
+        # non-eval world_name overrides the track's WORLD_NAME (routing);
         # eval mode routes it to EVAL_WORLD_NAME via the manager/spec instead.
         if world_name and not evaluation:
             track_config = {**track_config, 'WORLD_NAME': world_name}
@@ -95,7 +96,6 @@ class DeepracerGymEnv(gym.Env):
         )
 
         # --- provision (or attach to) the sim container -----------------------
-        self._cache = cache
         self._manager = None
         self._handle = None
         self._finalizer = None
@@ -107,12 +107,12 @@ class DeepracerGymEnv(gym.Env):
             self._handle = self._manager.acquire(
                 agent_config=agent_config, track_config=track_config,
                 image=image or DEFAULT_IMAGE, cpus=cpus, memory=memory,
-                evaluation=evaluation, world_name=world_name, cache=cache,
+                evaluation=evaluation, world_name=world_name,
             )
             connect_port = self._handle.port
             # safety net for a forgotten close(); the documented API is close().
             self._finalizer = weakref.finalize(
-                self, _release, self._manager, self._handle, cache,
+                self, _release, self._manager, self._handle,
             )
         else:
             connect_port = port if port is not None else _default_port()
@@ -179,17 +179,18 @@ class DeepracerGymEnv(gym.Env):
         elif mode == 'rgb_array':
             return np.asarray(measurement)
 
-    def close(self, cache: bool | None=None):
+    def close(self, keep_warm: bool=False):
         '''Close the ZMQ client and release the sim container. Idempotent.
 
-        Releasing with cache=True keeps the container warm for a later env with a
-        matching config to re-attach; cache=False stops+removes it. The default
-        is the value passed to the constructor.
+        By default the container is stopped and removed. Pass keep_warm=True to
+        keep it warm so a later env in *this same process* with a matching config
+        re-attaches (faster boot); a warm container does NOT survive process exit.
 
         Note: gym.make wraps the env, and gymnasium's Wrapper.close() does not
-        forward kwargs, so `wrapped_env.close(cache=…)` raises. A plain
-        `env.close()` works and uses the constructor default; to override, use
-        `deepracer_gym.close(env, cache=…)` or `env.unwrapped.close(cache=…)`.
+        forward kwargs, so `wrapped_env.close(keep_warm=True)` raises. A plain
+        `env.close()` works (stops+removes); to keep it warm through the wrapper
+        use `deepracer_gym.close(env, keep_warm=True)` or
+        `env.unwrapped.close(keep_warm=True)`.
         '''
         if self._closed:
             return
@@ -199,10 +200,9 @@ class DeepracerGymEnv(gym.Env):
         except Exception:
             pass
         if self._manager is not None and self._handle is not None:
-            use_cache = self._cache if cache is None else cache
             if self._finalizer is not None:
                 self._finalizer.detach()
-            self._manager.release(self._handle, cache=use_cache)
+            self._manager.release(self._handle, keep_warm=keep_warm)
         super().close()
 
     def __enter__(self):

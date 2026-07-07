@@ -205,6 +205,20 @@ def test_podman_is_alive_parses_inspect():
     assert be.is_alive(make_spec_handle()) is False
 
 
+def test_podman_managed_containers_filters_by_managed_label():
+    # the startup-hint query: list managed deepracer containers by name
+    rec = Recorder(outputs={'ps': FakeResult(stdout='deepracer-alice-0\ndeepracer-alice-1\n')})
+    be = B.PodmanBackend(executor=rec)
+    names = be.managed_containers()
+    assert names == ['deepracer-alice-0', 'deepracer-alice-1']
+    argv = rec.calls[-1]
+    assert argv[:3] == ['podman', 'ps', '--filter']
+    assert f'label={LABEL_NS}.managed=true' in argv
+    # empty output -> no names, no crash
+    rec = Recorder(outputs={'ps': FakeResult(stdout='')})
+    assert B.PodmanBackend(executor=rec).managed_containers() == []
+
+
 def make_spec_handle():
     spec = make_spec()
     return B.SimHandle(id='x', name=spec.identity.name, port=spec.identity.port,

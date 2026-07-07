@@ -6,25 +6,25 @@ register(
 )
 
 
-def close(env, cache: bool | None=None):
-    '''Close a (possibly gym.make-wrapped) DeepRacer env, with an optional cache
-    override.
+def close(env, keep_warm: bool=False):
+    '''Close a (possibly gym.make-wrapped) DeepRacer env, optionally keeping the
+    container warm.
 
     `gym.make` wraps the env, and gymnasium's `Wrapper.close()` does not forward
-    keyword arguments, so `wrapped_env.close(cache=False)` raises. Use this helper
-    (or `env.unwrapped.close(cache=…)`) to override the cache decision at close.
-    A plain `env.close()` always works and uses the constructor's `cache` value.
+    keyword arguments, so `wrapped_env.close(keep_warm=True)` raises. Use this
+    helper (or `env.unwrapped.close(keep_warm=…)`) to keep the container warm at
+    close. A plain `env.close()` always works and stops+removes the container.
     '''
-    env.unwrapped.close(cache=cache)
+    env.unwrapped.close(keep_warm=keep_warm)
 
 
-def shutdown_all(include_cached: bool=True):
+def shutdown_all():
     '''Stop every DeepRacer container this process is managing, including any
-    kept warm by cache=True. Call when you are completely done (or to reclaim
-    warm containers).'''
+    kept warm. Call when you are completely done (or to reclaim warm
+    containers).'''
     from deepracer_gym.service.manager import SimulationManager
     if SimulationManager._instance is not None:
-        SimulationManager._instance.shutdown_all(include_cached=include_cached)
+        SimulationManager._instance.shutdown_all()
 
 
 def running() -> list[str]:

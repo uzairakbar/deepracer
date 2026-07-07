@@ -116,7 +116,7 @@ def fingerprint(
 
     Excludes the reward function (computed client-side) and per-instance identity
     (fresh each start). Two envs with the same fingerprint may reuse one warm
-    container when cache=True.
+    container within a process (see close(keep_warm=True)).
     '''
     payload = {
         'image': image,

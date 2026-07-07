@@ -28,7 +28,7 @@ class SimHandle:
 
 class SimBackend(abc.ABC):
     '''Runtime-agnostic container control. OCI engines (Docker, Podman) give each
-    container its own netns; Apptainer shares the host netns (needs §4.4).'''
+    container its own netns; Apptainer shares the host netns.'''
     name: str = 'abstract'
     # How the manager decides "ready": 'logs' watches for the server's bound
     # marker (OCI — the userland proxy makes a bare TCP probe answer too early),
@@ -56,14 +56,11 @@ class SimBackend(abc.ABC):
     def logs(self, handle: SimHandle) -> str:
         ...
 
-    # --- cache support (OCI backends override; others no-op / None) ---------
-    def find_idle(self, fingerprint: str) -> SimHandle | None:
-        '''Return an idle cached container matching the fingerprint, else None.'''
-        return None
-
-    def set_state(self, handle: SimHandle, state: str) -> None:
-        '''Flip the idle/busy discovery label (no-op where labels don't exist).'''
-        return None
+    def managed_containers(self) -> list[str]:
+        '''Names of this backend's managed DeepRacer containers currently on the
+        host (any process). Best-effort; used only for the startup hint about
+        leftovers from an ungracefully-killed session.'''
+        return []
 
 
 # --------------------------------------------------------------------------- #
@@ -156,26 +153,14 @@ class DockerBackend(SimBackend):
         except Exception:
             return None
 
-    def find_idle(self, fingerprint: str) -> SimHandle | None:
-        '''Any *running* managed container of this fingerprint (a cross-process
-        reuse candidate). The manager probe-before-claims it (§4.11).'''
-        filters = {'label': [
-            f'{LABEL_NS}.managed=true',
-            f'{LABEL_NS}.fingerprint={fingerprint}',
-        ], 'status': 'running'}
-        for container in self._client.containers.list(filters=filters):
-            ports = container.attrs['NetworkSettings']['Ports'].get(
-                f'{INTERNAL_PORT}/tcp'
+    def managed_containers(self) -> list[str]:
+        try:
+            containers = self._client.containers.list(
+                filters={'label': f'{LABEL_NS}.managed=true'}
             )
-            if not ports:
-                continue
-            return SimHandle(
-                id=container.id, name=container.name,
-                port=int(ports[0]['HostPort']), backend=self.name,
-                fingerprint=fingerprint,
-                env_id=int(container.labels.get(f'{LABEL_NS}.env_id', -1)),
-            )
-        return None
+            return [c.name for c in containers]
+        except Exception:
+            return []
 
 
 # --------------------------------------------------------------------------- #
@@ -287,22 +272,12 @@ class PodmanBackend(_CliBackend):
         )
         return result.returncode == 0 and result.stdout.strip() == 'true'
 
-    def find_idle(self, fingerprint: str) -> SimHandle | None:
+    def managed_containers(self) -> list[str]:
         result = _run([
-            self.binary, 'ps', '--filter',
-            f'label={LABEL_NS}.fingerprint={fingerprint}',
+            self.binary, 'ps', '--filter', f'label={LABEL_NS}.managed=true',
             '--format', '{{.Names}}',
         ], self._exec)
-        names = [n for n in (result.stdout or '').split() if n]
-        if not names:
-            return None
-        # port from the running container's identity (name encodes env_id)
-        name = names[0]
-        env_id = int(name.rsplit('-', 1)[-1])
-        from deepracer_gym.service.identity import make_identity, current_user
-        port = make_identity(current_user(), env_id).port
-        return SimHandle(id=name, name=name, port=port, backend=self.name,
-                         fingerprint=fingerprint, env_id=env_id)
+        return [n for n in (result.stdout or '').split() if n]
 
 
 class ApptainerBackend(_CliBackend):
@@ -421,9 +396,18 @@ class ApptainerBackend(_CliBackend):
                 pass
         return text
 
-    # Apptainer instances carry no label store, so cache reuse is disabled for
-    # the first cut (find_idle -> None inherited): cache=True simply starts fresh
-    # on Apptainer, which is safe. (Podman/Docker get full cache reuse.)
+    def managed_containers(self) -> list[str]:
+        result = _run([self.binary, 'instance', 'list', '--json'], self._exec)
+        try:
+            instances = json.loads(result.stdout).get('instances', [])
+        except Exception:
+            return []
+        return [i['instance'] for i in instances
+                if str(i.get('instance', '')).startswith('deepracer-')]
+
+    # Warm reuse is in-process only (the manager's idle pool) and uniform across
+    # all backends; no backend does cross-process container adoption, so there is
+    # no idle/busy discovery label to maintain.
 
 
 BACKENDS: list[type[SimBackend]] = [DockerBackend, PodmanBackend, ApptainerBackend]

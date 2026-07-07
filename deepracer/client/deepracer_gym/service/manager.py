@@ -35,11 +35,11 @@ def _tcp_open(host: str, port: int, timeout: float=0.5) -> bool:
 
 def _zmq_reserves(port: int, timeout: float=5.0) -> bool:
     '''True if a ZMQ gym server is live on the port and re-serves a fresh client
-    (sends an observation in response to a `ready`). Used before attaching to a
-    cached container so cache degrades to a fresh start instead of hanging on a
-    sim that did not survive the previous client's disconnect (§4.11 safety
-    valve). A bare TCP probe is not enough under Docker/Podman (the userland
-    proxy answers even when the app is dead).'''
+    (sends an observation in response to a `ready`). Used before re-attaching to
+    a warm-pooled container so a sim that did not survive the previous client's
+    disconnect degrades to a fresh start instead of hanging. A bare TCP probe is
+    not enough under Docker/Podman (the userland proxy answers even when the app
+    is dead).'''
     try:
         import zmq
         import msgpack
@@ -66,9 +66,12 @@ def _tail(text: str, lines: int=25) -> str:
 
 
 class SimulationManager:
-    '''Owns the container lifecycle for this process. Default path: fresh
-    container per acquire, stop on release. cache=True: warm attach-or-start with
-    an in-process idle pool keyed by config fingerprint (§4.5, §4.11).'''
+    '''Owns the container lifecycle for this process. acquire() re-attaches a
+    matching warm container from this process's in-process idle pool if one
+    exists, else starts fresh. release() stops+removes by default, or returns the
+    container to the idle pool for same-process reuse when keep_warm=True. Warm
+    containers do not survive process exit and are never shared across processes;
+    concurrent processes stay isolated via free_env_id's port probe.'''
 
     _instance: 'SimulationManager | None'=None
     _instance_lock = threading.Lock()
@@ -88,6 +91,25 @@ class SimulationManager:
         self._idle: dict[str, list[SimHandle]]={}           # fingerprint -> idle handles
         self._lock = threading.RLock()
         atexit.register(self.shutdown_all)
+        self._warn_existing()
+
+    def _warn_existing(self) -> None:
+        '''One-shot hint at startup: pre-existing managed containers are almost
+        always leftovers from a session that was killed ungracefully (a normal
+        exit reaps them via shutdown_all). Purely informational — we do not touch
+        them; the user decides whether to interrupt and run the cleaner.'''
+        try:
+            existing = self.backend.managed_containers()
+        except Exception:
+            return
+        if existing:
+            preview = ', '.join(existing[:4]) + ('…' if len(existing) > 4 else '')
+            logger.warning(
+                f'Found {len(existing)} managed DeepRacer container(s) already '
+                f'on this host ({preview}). Any left by a killed/interrupted '
+                f'session are stale — run `python -m deepracer_gym.clean` to '
+                f'reclaim their resources.'
+            )
 
     @classmethod
     def instance(cls, **kwargs) -> 'SimulationManager':
@@ -104,22 +126,18 @@ class SimulationManager:
         return ids
 
     def _take_idle(self, fp: str) -> SimHandle | None:
-        '''Pop a live idle container for this fingerprint (in-process pool),
-        dropping any that have died. Cross-process discovery falls through.'''
+        '''Pop a live warm container for this fingerprint from this process's
+        in-process idle pool, dropping any that have died. Warm reuse is
+        same-process only; an empty pool (or a fresh process) falls through to a
+        fresh start.'''
         pool = self._idle.get(fp, [])
         while pool:
             handle = pool.pop()
             if self.backend.is_alive(handle) and _zmq_reserves(handle.port):
                 self._live[handle.name] = handle
-                logger.info(f'[cache] re-attached warm {handle.name} (fp {fp})')
+                logger.info(f'[warm] re-attached {handle.name} (fp {fp})')
                 return handle
             self.backend.stop(handle)      # dead or won't re-serve; reap
-        # cross-process: a container left running by another kernel
-        found = self.backend.find_idle(fp)
-        if found and self.backend.is_alive(found) and _zmq_reserves(found.port):
-            self._live[found.name] = found
-            logger.info(f'[cache] adopted running {found.name} (fp {fp})')
-            return found
         return None
 
     def _reap_one_idle(self) -> bool:
@@ -178,14 +196,12 @@ class SimulationManager:
             memory: str='6g',
             evaluation: bool=False,
             world_name: str | None=None,
-            cache: bool=False,
         ) -> SimHandle:
         fp = fingerprint(image, agent_config, track_config, evaluation, world_name)
         with self._lock:
-            if cache:
-                warm = self._take_idle(fp)
-                if warm is not None:
-                    return warm
+            warm = self._take_idle(fp)
+            if warm is not None:
+                return warm
             try:
                 identity = free_env_id(self.user, self.max_envs, self._taken_env_ids())
             except RuntimeError:
@@ -202,27 +218,27 @@ class SimulationManager:
         self._wait_ready(handle)
         return handle
 
-    def release(self, handle: SimHandle, cache: bool=False) -> None:
+    def release(self, handle: SimHandle, keep_warm: bool=False) -> None:
         with self._lock:
             self._live.pop(handle.name, None)
-            if cache and self.backend.is_alive(handle):
+            if keep_warm and self.backend.is_alive(handle):
                 self._idle.setdefault(handle.fingerprint, []).append(handle)
-                logger.info(f'[cache] kept {handle.name} warm (fp {handle.fingerprint})')
+                logger.info(f'[warm] kept {handle.name} warm (fp {handle.fingerprint})')
                 return
         try:
             self.backend.stop(handle)
         except Exception:
             pass
 
-    def shutdown_all(self, include_cached: bool=False) -> None:
-        '''Stop everything this process owns. Idle-cached containers persist by
-        default (cross-kernel reuse, §4.11) unless include_cached=True (clean).'''
+    def shutdown_all(self) -> None:
+        '''Stop every container this process owns — live and warm-pooled alike.
+        Runs on interpreter exit (atexit) and via deepracer_gym.shutdown_all().
+        Warm containers do not survive process exit (no cross-process reuse).'''
         with self._lock:
             handles = list(self._live.values())
-            if include_cached:
-                for pool in self._idle.values():
-                    handles.extend(pool)
-                self._idle.clear()
+            for pool in self._idle.values():
+                handles.extend(pool)
+            self._idle.clear()
             self._live.clear()
         for handle in handles:
             try:

@@ -11,7 +11,7 @@ from deepracer_gym.service.identity import Identity, fingerprint
 DEFAULT_IMAGE: str=os.environ.get('DEEPRACER_IMAGE', 'uzairakbar/deepracer-test:v0')
 # The container's internal ZMQ bind; OCI backends publish it to identity.port.
 INTERNAL_PORT: int=8888
-# Discovery-label namespace (docker/podman labels; used by cache + clean).
+# Discovery-label namespace (docker/podman labels; used by clean + running()).
 LABEL_NS: str='deepracer'
 
 
@@ -64,11 +64,10 @@ def spec_to_env(spec: SimSpec, gym_port: int | None=None) -> dict[str, str]:
 
 
 def spec_labels(spec: SimSpec) -> dict[str, str]:
-    '''Discovery labels stamped on OCI containers so cache/clean can find them by
-    querying the runtime (the runtime IS the registry, §4.11). Note: OCI labels
-    are immutable after create, so there is no mutable idle/busy label — the
-    manager tracks busy/idle in-process and probe-before-claims a discovered
-    container (§4.11 safety valve).'''
+    '''Discovery labels stamped on OCI containers so clean/running can find them
+    by querying the runtime (the runtime IS the registry). Note: OCI labels are
+    immutable after create; the manager tracks warm/busy state in-process only,
+    and containers are never shared across processes.'''
     return {
         f'{LABEL_NS}.managed': 'true',
         f'{LABEL_NS}.fingerprint': spec.fingerprint,

@@ -36,7 +36,7 @@ setup(
     ],
     packages=find_packages(),
     package_data={
-        # packaged default configs + frozen track list (§4.7)
+        # packaged default configs + frozen track list
         'deepracer_gym.defaults': [
             'agent_params.json',
             'environment_params.yaml',

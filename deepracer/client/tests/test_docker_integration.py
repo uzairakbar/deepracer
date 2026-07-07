@@ -1,6 +1,6 @@
 """End-to-end container-management tests on REAL Docker via the fake-sim image.
 
-These prove the backend + manager + ports + labels + cache + concurrency work
+These prove the backend + manager + ports + labels + keep_warm + concurrency work
 against a live runtime. The heavy amd64 sim only adds Gazebo boot time (validated
 on PACE); every lifecycle mechanism our code owns is exercised here for real.
 """
@@ -47,7 +47,7 @@ def test_start_alive_logs_materialize_stop(fake_image, docker_backend, cleanup_m
         gym_port = _exec(handle, docker_backend, ['printenv', 'GYM_PORT']).strip()
         assert gym_port == '8888'
     finally:
-        mgr.release(handle, cache=False)
+        mgr.release(handle)
     assert not docker_backend.is_alive(handle)
 
 
@@ -58,7 +58,7 @@ def test_no_bind_mount_present(fake_image, docker_backend, cleanup_managed):
         mounts = docker_backend._get(handle).attrs['Mounts']
         assert mounts == []          # config travels as env vars, not a mount
     finally:
-        mgr.release(handle, cache=False)
+        mgr.release(handle)
 
 
 def test_concurrent_distinct_configs_and_cap(fake_image, docker_backend, cleanup_managed):
@@ -79,40 +79,64 @@ def test_concurrent_distinct_configs_and_cap(fake_image, docker_backend, cleanup
                         image=fake_image, **SMALL)
     finally:
         for h in handles:
-            mgr.release(h, cache=False)
+            mgr.release(h)
 
 
-def test_cache_reuses_warm_container(fake_image, docker_backend, cleanup_managed):
-    mgr = _mgr(docker_backend, 'pytest-cache')
+def test_keep_warm_reuses_container(fake_image, docker_backend, cleanup_managed):
+    mgr = _mgr(docker_backend, 'pytest-warm')
     h1 = mgr.acquire(agent_config=AGENT, track_config=TRACK, image=fake_image,
-                     cache=True, **SMALL)
+                     **SMALL)
     name1, port1 = h1.name, h1.port
-    # release WITH cache -> container stays alive
-    mgr.release(h1, cache=True)
+    # release keeping warm -> container stays alive in the in-process idle pool
+    mgr.release(h1, keep_warm=True)
     assert docker_backend.is_alive(h1)
     # re-acquire same config -> the SAME warm container, no new start
     h2 = mgr.acquire(agent_config=AGENT, track_config=TRACK, image=fake_image,
-                     cache=True, **SMALL)
+                     **SMALL)
     try:
         assert h2.name == name1 and h2.port == port1
     finally:
-        mgr.release(h2, cache=False)     # force-stop
+        mgr.release(h2)                  # default -> stop + remove
     assert not docker_backend.is_alive(h2)
 
 
-def test_cache_different_config_starts_fresh(fake_image, docker_backend, cleanup_managed):
-    mgr = _mgr(docker_backend, 'pytest-cache2')
+def test_keep_warm_different_config_starts_fresh(fake_image, docker_backend, cleanup_managed):
+    mgr = _mgr(docker_backend, 'pytest-warm2')
     h1 = mgr.acquire(agent_config=AGENT, track_config={'WORLD_NAME': 'Austin'},
-                     image=fake_image, cache=True, **SMALL)
-    mgr.release(h1, cache=True)
+                     image=fake_image, **SMALL)
+    mgr.release(h1, keep_warm=True)
     h2 = mgr.acquire(agent_config=AGENT, track_config={'WORLD_NAME': 'Monaco'},
-                     image=fake_image, cache=True, **SMALL)
+                     image=fake_image, **SMALL)
     try:
         assert h2.name != h1.name         # different fingerprint -> different container
     finally:
-        mgr.shutdown_all(include_cached=True)
+        mgr.shutdown_all()
     assert not docker_backend.is_alive(h1)
     assert not docker_backend.is_alive(h2)
+
+
+def test_two_managers_same_config_distinct_ports(fake_image, docker_backend,
+                                                 cleanup_managed):
+    # Two managers stand in for two processes/kernels. Same user + same config
+    # must NOT collide: the second lands on a different env_id/port because the
+    # first already holds its port (free_env_id's port probe). This is the sole
+    # cross-process safety mechanism now that cross-process adoption is gone.
+    mgr_a = _mgr(docker_backend, 'pytest-xproc', max_envs=4)
+    mgr_b = _mgr(docker_backend, 'pytest-xproc', max_envs=4)   # same user on purpose
+    ha = hb = None
+    try:
+        ha = mgr_a.acquire(agent_config=AGENT, track_config=TRACK,
+                           image=fake_image, **SMALL)
+        hb = mgr_b.acquire(agent_config=AGENT, track_config=TRACK,
+                           image=fake_image, **SMALL)
+        assert ha.port != hb.port          # never the same simulator
+        assert ha.name != hb.name
+        assert docker_backend.is_alive(ha) and docker_backend.is_alive(hb)
+    finally:
+        if ha is not None:
+            mgr_a.release(ha)
+        if hb is not None:
+            mgr_b.release(hb)
 
 
 def test_readiness_surfaces_fatal_on_crash(fake_image, docker_backend, cleanup_managed,

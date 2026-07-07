@@ -3,10 +3,9 @@
     python -m deepracer_gym.clean
 
 Removes any managed containers (Docker/Podman) and Apptainer instances left
-running (e.g. cache=True warm sims, or leftovers from a crashed kernel), plus
+running (e.g. keep_warm sims, or leftovers from a crashed/killed kernel), plus
 their per-instance overlays and Apptainer's never-rotated instance logs. Best-
-effort and idempotent — safe to run anytime. It does NOT touch the uv/venv
-(that stays a separate manual concern).
+effort and idempotent — safe to run anytime.
 """
 import os
 import glob
