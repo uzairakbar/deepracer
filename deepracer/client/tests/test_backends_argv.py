@@ -182,9 +182,10 @@ def test_podman_backend_start_and_stop_argv():
     assert handle.name == spec.identity.name
     assert handle.port == spec.identity.port
     assert handle.id == 'container-id-123'
-    # a leftover-clear (rm -f) then the run
+    # a leftover-clear (rm -f), an image-presence probe, then the run
     assert rec.calls[0][:3] == ['podman', 'rm', '-f']
-    assert rec.calls[1][:2] == ['podman', 'run']
+    assert rec.calls[1][:3] == ['podman', 'image', 'exists']
+    assert rec.calls[2][:2] == ['podman', 'run']
     be.stop(handle)
     assert rec.calls[-1] == ['podman', 'rm', '-f', spec.identity.name]
 
@@ -217,6 +218,54 @@ def test_podman_managed_containers_filters_by_managed_label():
     # empty output -> no names, no crash
     rec = Recorder(outputs={'ps': FakeResult(stdout='')})
     assert B.PodmanBackend(executor=rec).managed_containers() == []
+
+
+def _capture_info(fn):
+    """Run fn() while capturing loguru INFO messages; returns the message list."""
+    from loguru import logger
+    msgs = []
+    sink = logger.add(lambda m: msgs.append(str(m)), level='INFO', format='{message}')
+    try:
+        fn()
+    finally:
+        logger.remove(sink)
+    return msgs
+
+
+def test_podman_pull_hint_only_when_image_absent():
+    # absent (image exists -> rc!=0) => hint, and it probes with `image exists`
+    rec = Recorder(outputs={'exists': FakeResult(returncode=1)})
+    be = B.PodmanBackend(executor=rec)
+    msgs = _capture_info(lambda: be._log_if_pulling('docker.io/x:v0'))
+    assert any('Pulling simulator image' in m for m in msgs)
+    assert rec.calls[-1][:3] == ['podman', 'image', 'exists']
+    # present (rc==0) => no hint
+    rec = Recorder(outputs={'exists': FakeResult(returncode=0)})
+    be = B.PodmanBackend(executor=rec)
+    msgs = _capture_info(lambda: be._log_if_pulling('docker.io/x:v0'))
+    assert not any('Pulling simulator image' in m for m in msgs)
+
+
+def test_docker_pull_hint_only_when_image_absent():
+    import docker
+
+    class FakeImages:
+        def __init__(self, present): self._present = present
+        def get(self, image):
+            if not self._present:
+                raise docker.errors.ImageNotFound(image)
+            return object()
+
+    class FakeClient:
+        def __init__(self, present): self.images = FakeImages(present)
+
+    be = B.DockerBackend(client=FakeClient(present=False))
+    msgs = _capture_info(lambda: be._log_if_pulling('x:v0'))
+    assert any('Pulling simulator image' in m for m in msgs)
+
+    be = B.DockerBackend(client=FakeClient(present=True))
+    msgs = _capture_info(lambda: be._log_if_pulling('x:v0'))
+    assert not any('Pulling simulator image' in m for m in msgs)
 
 
 def make_spec_handle():

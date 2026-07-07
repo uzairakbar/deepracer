@@ -14,6 +14,14 @@ from deepracer_gym.service.spec import (
 )
 
 
+# Shown once, only when the image is not yet cached locally, so a first-run pull
+# (multi-GB, minutes on a slow link / PACE) doesn't look like a frozen kernel.
+PULL_HINT: str = (
+    'Pulling simulator image {image} (first run) — this can take several minutes '
+    'on a slow connection; your kernel is not frozen, please wait.'
+)
+
+
 @dataclass
 class SimHandle:
     '''Opaque reference to one running sim, returned by a backend's start/attach.'''
@@ -90,8 +98,19 @@ class DockerBackend(SimBackend):
         except Exception:
             pass
 
+    def _log_if_pulling(self, image: str) -> None:
+        '''containers.run() auto-pulls a missing image; warn first so a slow
+        first-run pull isn't mistaken for a hung kernel. Only when truly absent.'''
+        try:
+            self._client.images.get(image)
+        except self._docker.errors.ImageNotFound:
+            logger.info(PULL_HINT.format(image=image))
+        except Exception:
+            pass                         # can't tell; stay quiet rather than lie
+
     def start(self, spec: SimSpec) -> SimHandle:
         self._remove_if_exists(spec.identity.name)
+        self._log_if_pulling(spec.image)
         container = self._client.containers.run(
             spec.image,
             detach=True,
@@ -250,8 +269,16 @@ class PodmanBackend(_CliBackend):
     def available() -> bool:
         return shutil.which('podman') is not None
 
+    def _log_if_pulling(self, image: str) -> None:
+        '''`podman run` auto-pulls a missing image; warn first so a slow first-run
+        pull isn't mistaken for a hung kernel. Only when truly absent.'''
+        result = _run([self.binary, 'image', 'exists', image], self._exec)
+        if result.returncode != 0:
+            logger.info(PULL_HINT.format(image=image))
+
     def start(self, spec: SimSpec) -> SimHandle:
         _run([self.binary, 'rm', '-f', spec.identity.name], self._exec)  # clear leftover
+        self._log_if_pulling(qualify_image(spec.image))
         result = _run(podman_run_argv(spec, self.binary), self._exec)
         if result.returncode != 0:
             raise RuntimeError(f'podman run failed: {result.stderr.strip()}')
@@ -308,7 +335,9 @@ class ApptainerBackend(_CliBackend):
         digest = hashlib.sha1(image.encode()).hexdigest()[:10]
         sif = os.path.join(self._scratch(), f'deepracer-{digest}.sif')
         if not os.path.exists(sif):
-            logger.info(f'[apptainer] pulling {ref} -> {sif} (one-time)')
+            logger.info(f'[apptainer] pulling {ref} -> {sif} (one-time) — this can '
+                        f'take several minutes on a slow connection; your kernel is '
+                        f'not frozen, please wait.')
             result = _run([self.binary, 'pull', '--force', sif, ref], self._exec)
             if result.returncode != 0:
                 raise RuntimeError(f'apptainer pull failed: {result.stderr.strip()}')
