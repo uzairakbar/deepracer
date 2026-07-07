@@ -1,3 +1,4 @@
+import os
 import time
 import torch
 import datetime
@@ -11,6 +12,8 @@ from src.utils import (
     device,
     set_seed,
     make_environment,
+    RUNS_DIR,
+    MODELS_DIR,
 )
 
 
@@ -49,7 +52,7 @@ def run(hparams: dict | None=None, agent_config: dict | None=None, track_config:
     run_name = (
         f"{args.environment}__{args.experiment_name}__{args.seed}__{int(time.time())}"
     )
-    writer = SummaryWriter(f"runs/{run_name}")
+    writer = SummaryWriter(f"{RUNS_DIR}/{run_name}")
     writer.add_text(
         'hyperparameters',
         "|param|value|\n|-|-|\n%s" % (
@@ -102,8 +105,9 @@ def run(hparams: dict | None=None, agent_config: dict | None=None, track_config:
             break
     
     # save your agent/model often
+    os.makedirs(MODELS_DIR, exist_ok=True)
     torch.save(
-        agent, f'{agent.name}.torch'
+        agent, os.path.join(MODELS_DIR, f'{agent.name}.torch')
     )
     logger.info(
         f'Model {agent.name} saved.'

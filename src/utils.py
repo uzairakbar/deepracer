@@ -17,7 +17,7 @@ from gymnasium.wrappers import (
 )
 from IPython.display import Video, display, clear_output
 
-from deepracer_gym.defaults import resolve_track_config
+from deepracer_gym.defaults import resolve_agent_config, resolve_track_config
 
 from src.agents import Agent
 
@@ -42,6 +42,39 @@ EVAL_EPISODES: int = 5
 ONLY_CPU: bool = False
 SEED: int=42
 
+# --- artifact output locations (everything the utils produce lives here) -----
+ARTIFACTS_DIR: str='./artifacts'
+DEMOS_DIR: str=f'{ARTIFACTS_DIR}/demos'
+EVAL_DIR: str=f'{ARTIFACTS_DIR}/evaluations'
+PLOTS_DIR: str=f'{ARTIFACTS_DIR}/plots'
+RUNS_DIR: str=f'{ARTIFACTS_DIR}/runs'        # tensorboard logs (src.run)
+MODELS_DIR: str=f'{ARTIFACTS_DIR}/models'    # saved models (src.run)
+
+# The three project tracks evaluate() reports across (increasing difficulty).
+PROJECT_TRACKS: list[str]=[
+    'reInvent2019_wide',    # A to Z Speedway
+    'reInvent2019_track',   # Smile Speedway
+    'Vegas_track',          # AWS Summit Raceway
+]
+# Canonical race types are an OPTIONAL convenience for building a track_config;
+# they are NOT a restriction — any obstacle/bot combo is accepted everywhere.
+RACE_TYPES: dict[str, dict[str, str]]={
+    'time_trial':         {'NUMBER_OF_OBSTACLES': '0', 'NUMBER_OF_BOT_CARS': '0'},
+    'obstacle_avoidance': {'NUMBER_OF_OBSTACLES': '6', 'NUMBER_OF_BOT_CARS': '0'},
+    'head_to_bot':        {'NUMBER_OF_OBSTACLES': '0', 'NUMBER_OF_BOT_CARS': '3'},
+}
+
+
+def race_config(race_type: str, world_name: str) -> dict:
+    '''Convenience to build a track_config for a canonical race type on a track.
+    You may also just write the track_config dict yourself (any counts allowed).'''
+    if race_type not in RACE_TYPES:
+        raise ValueError(
+            f'Unknown race_type {race_type!r}; choose {list(RACE_TYPES)} '
+            f'or pass a track_config dict directly.'
+        )
+    return {**RACE_TYPES[race_type], 'WORLD_NAME': world_name}
+
 
 def set_seed(seed: int=SEED):
     '''
@@ -50,16 +83,16 @@ def set_seed(seed: int=SEED):
     random.seed(seed)
 
     np.random.seed(seed)
-    
+
     torch.manual_seed(seed)
     torch.cuda.manual_seed(seed)
-    
+
     # uncomment this for better reproducibility; slows torch
     # torch.backends.cudnn.deterministic = True
     # torch.backends.cudnn.benchmark = False
-    
+
     os.environ['PYTHONHASHSEED'] = str(seed)
-    
+
     logger.info(f'Random seed set as {seed}.')
 
 
@@ -70,10 +103,10 @@ def device():
         device = 'mps'
     else:
         device = 'cpu'
-    
+
     if ONLY_CPU:
         device = 'cpu'
-    
+
     logger.info(f'Using {device} device.')
     return torch.device(device)
 
@@ -98,7 +131,6 @@ def make_environment(
         FlattenObservation(environment)
     )
 
-    # environment.seed(seed)
     environment.action_space.seed(seed)
     environment.observation_space.seed(seed)
 
@@ -106,34 +138,52 @@ def make_environment(
 
 
 def get_world_name(track_config: dict | None=None):
-    track_config = resolve_track_config(track_config)
-
-    if 'WORLD_NAME' not in track_config:
-        raise ValueError('WORLD_NAME not defined in track_config.')
-
-    return track_config['WORLD_NAME']
+    '''The track a config points at (WORLD_NAME); None -> packaged default.'''
+    return resolve_track_config(track_config)['WORLD_NAME']
 
 
 def get_race_type(track_config: dict | None=None):
-    track_config = resolve_track_config(track_config)
-
-    obstacles = int(track_config['NUMBER_OF_OBSTACLES'])
-    bots = int(track_config['NUMBER_OF_BOT_CARS'])
-    if (
-        obstacles == 0 and bots == 0
-    ):
+    '''A human label for the race type implied by a track_config's counts, used to
+    name artifacts. Relaxed: returns a sensible label for ANY obstacle/bot combo
+    (never raises), so demo/evaluate accept intermediate/unusual configurations.'''
+    tc = resolve_track_config(track_config)
+    obstacles = int(tc.get('NUMBER_OF_OBSTACLES', 0))
+    bots = int(tc.get('NUMBER_OF_BOT_CARS', 0))
+    if obstacles == 0 and bots == 0:
         return 'time_trial'
-    elif (
-        obstacles == 6 and bots == 0
-    ):
-        return 'obstacle_avoidance'
-    elif (
-        obstacles == 0 and bots == 3
-    ):
-        return 'head_to_bot'
-    else:
+    if bots == 0:
+        return 'obstacle_avoidance'      # any number of obstacles
+    if obstacles == 0:
+        return 'head_to_bot'             # any number of bot cars
+    return 'obstacle_and_bot'            # mixed; label only
+
+
+def _to_env_action(action, action_space):
+    '''Coerce an agent's action to what the environment's step expects.'''
+    if not isinstance(action, np.ndarray) and torch.is_tensor(action):
+        action = action.cpu().detach().numpy()
+    if isinstance(action_space, spaces.Discrete):
+        action = action.item() if hasattr(action, 'item') else int(action)
+    return action
+
+
+def _check_agent_env_compatible(agent: Agent, environment, observation):
+    '''Fail fast (before a whole run) if the agent does not fit the environment
+    built from this agent_config -- e.g. a mismatched action space or an encoder
+    that chokes on the observation shape.'''
+    try:
+        action = agent.get_action(torch.Tensor(observation)[None, :])
+        action = _to_env_action(action, environment.action_space)
+        fits = environment.action_space.contains(action)
+    except Exception as e:
         raise ValueError(
-            f'Incorrect configuration for NUMBER_OF_OBSTACLES or NUMBER_OF_BOT_CARS.'
+            'agent is incompatible with the environment built from this agent_config '
+            '-- pass the agent_config you trained with.'
+        ) from e
+    if not fits:
+        raise ValueError(
+            'agent action does not fit the environment action space '
+            '-- pass the agent_config you trained with.'
         )
 
 
@@ -141,11 +191,15 @@ def demo(
         agent: Agent,
         agent_config: dict | None=None,
         track_config: dict | None=None,
-        environment_name: str=ENVIRONMENT_NAME,
-        directory: str='./demos'               # directory to save videos
+        directory: str=DEMOS_DIR               # directory to save videos
     ):
-    race_type = get_race_type(track_config)
+    '''Record a video of an agent acting in the environment fully specified by
+    agent_config + track_config (any track, any obstacle/bot combo). None -> the
+    packaged defaults.'''
+    agent_config = resolve_agent_config(agent_config)
+    track_config = resolve_track_config(track_config)
     world_name = get_world_name(track_config)
+    race_type = get_race_type(track_config)
 
     demo_device = torch.device('cpu')
     agent.eval().to(demo_device)
@@ -153,7 +207,7 @@ def demo(
 
     # create environment with proper render_mode
     demo_environment = make_environment(
-        environment_name, render_mode='rgb_array',
+        render_mode='rgb_array',
         agent_config=agent_config, track_config=track_config,
     )
 
@@ -166,6 +220,7 @@ def demo(
     )
 
     observation, info = demo_environment.reset()
+    _check_agent_env_compatible(agent, demo_environment, observation)
     prev_sim_time = info['reward_params']['sim_time']
     total_sim_dt = 0.0
     n_sim_dt = 0
@@ -176,12 +231,7 @@ def demo(
     for t in range(MAX_DEMO_STEPS):
         # get action from policy
         action = agent.get_action(torch.Tensor(observation)[None, :])
-
-        if not isinstance(action, np.ndarray) and torch.is_tensor(action):
-            action = action.cpu().detach().numpy()
-
-        if isinstance(demo_environment.action_space, spaces.Discrete):
-            action = action.item()
+        action = _to_env_action(action, demo_environment.action_space)
 
         # execute the action, get observation
         observation, _, terminated, truncated, info = demo_environment.step(
@@ -205,10 +255,9 @@ def demo(
 
     demo_environment.close()
     demo_progress.close()
-    
-    # The RecordVideo wrapper names the file automatically with the prefix + step info
-    # We'll grab the latest video with our given prefix
-    # e.g. 'agent_rl-video-episode-0.mp4' or similar
+
+    # The RecordVideo wrapper names the file with our prefix + episode info; grab
+    # the latest matching video.
     filtered_videos = sorted(
         f for f in os.listdir(directory)
         if (
@@ -236,31 +285,11 @@ def demo(
     )
 
 
-def evaluate_track(
-        agent: Agent,
-        world_name: str,
-        agent_config: dict | None=None,
-        track_config: dict | None=None,
-        environment_name: str=ENVIRONMENT_NAME,
-        directory: str='./evaluations'               # directory to save eval data
-    ):
-    race_type = get_race_type(track_config)
-
-    logger.info(
-        f'Starting {race_type} evaluation on {world_name} track.'
-    )
-
-    eval_device = torch.device('cpu')
-    agent.eval().to(eval_device)
-    os.makedirs(directory, exist_ok=True)
-
-    # The environment now provisions its own sim in evaluation mode on the
-    # requested track (no bash restart); closing it below tears the sim down.
-    eval_environment = make_environment(
-        environment_name, evaluation=True, world_name=world_name,
-        agent_config=agent_config, track_config=track_config,
-    )
-    observation, info = eval_environment.reset()
+def _run_eval_episodes(agent: Agent, environment, world_name: str):
+    '''Run EVAL_EPISODES episodes on an already-built eval environment and return
+    {'progress': [...], 'lap_time': [...]}.'''
+    observation, info = environment.reset()
+    _check_agent_env_compatible(agent, environment, observation)
 
     eval_metrics = {
         'progress': [],
@@ -280,14 +309,9 @@ def evaluate_track(
         for t in range(MAX_EVAL_STEPS):
 
             action = agent.get_action(torch.Tensor(observation)[None, :])
+            action = _to_env_action(action, environment.action_space)
 
-            if not isinstance(action, np.ndarray) and torch.is_tensor(action):
-                action = action.cpu().detach().numpy()
-
-            if isinstance(eval_environment.action_space, spaces.Discrete):
-                action = action.item()
-
-            observation, reward, terminated, truncated, info = eval_environment.step(
+            observation, reward, terminated, truncated, info = environment.step(
                 action
             )
 
@@ -310,29 +334,72 @@ def evaluate_track(
                     f'Episode {episode}:\t progress: {progress}\t lap_time: {lap}'
                 )
 
-                observation, info = eval_environment.reset()
-                
+                observation, info = environment.reset()
+
                 break
 
         episode_progress.close()
-        
+
         evaluation_progress.update()
         evaluation_progress.refresh()
     evaluation_progress.close()
-    eval_environment.close()
-    
+
+    return eval_metrics
+
+
+def _eval_one(agent: Agent, agent_config: dict, track_config: dict):
+    '''Build the eval sim for one track (from track_config's WORLD_NAME + counts),
+    run the episodes, tear it down, and return the metrics.'''
+    world_name = get_world_name(track_config)
+    # The environment provisions its own sim in evaluation mode on the requested
+    # track (no bash restart); closing it below tears the sim down.
+    eval_environment = make_environment(
+        evaluation=True, world_name=world_name,
+        agent_config=agent_config, track_config=track_config,
+    )
     try:
-        with open(f'{directory}/{race_type}-{agent.name}.json', '+r') as f:
-            all_metrics = json.load(f)
-    except:
-        all_metrics = {}
-    
-    all_metrics.update({
-        world_name: eval_metrics
-    })
-    with open(f'{directory}/{race_type}-{agent.name}.json', '+w') as f:
-        json.dump(all_metrics, f)
-    
+        return _run_eval_episodes(agent, eval_environment, world_name)
+    finally:
+        eval_environment.close()
+
+
+def _write_eval_metrics(directory, race_type, agent_name, metrics, overwrite=False):
+    '''Write {world_name: metrics} to <dir>/<race_type>-<agent>.json. Merges with
+    any existing file unless overwrite=True.'''
+    os.makedirs(directory, exist_ok=True)
+    path = os.path.join(directory, f'{race_type}-{agent_name}.json')
+    data = {}
+    if not overwrite and os.path.exists(path):
+        try:
+            with open(path) as f:
+                data = json.load(f)
+        except (json.JSONDecodeError, OSError):
+            data = {}
+    data.update(metrics)
+    with open(path, 'w') as f:
+        json.dump(data, f, indent=2)
+
+
+def evaluate_track(
+        agent: Agent,
+        agent_config: dict | None=None,
+        track_config: dict | None=None,
+        directory: str=EVAL_DIR                # directory to save eval data
+    ):
+    '''Evaluate an agent on a single track (WORLD_NAME + counts from track_config)
+    over EVAL_EPISODES episodes; returns and saves progress + lap-time.'''
+    agent_config = resolve_agent_config(agent_config)
+    track_config = resolve_track_config(track_config)
+    world_name = get_world_name(track_config)
+    race_type = get_race_type(track_config)
+
+    logger.info(
+        f'Starting {race_type} evaluation on {world_name} track.'
+    )
+
+    agent.eval().to(torch.device('cpu'))
+    eval_metrics = _eval_one(agent, agent_config, track_config)
+    _write_eval_metrics(directory, race_type, agent.name, {world_name: eval_metrics})
     return eval_metrics
 
 
@@ -340,20 +407,21 @@ def evaluate(
         agent: Agent,
         agent_config: dict | None=None,
         track_config: dict | None=None,
-        environment_name: str=ENVIRONMENT_NAME,
-        directory: str='./evaluations'               # directory to save eval data
+        directory: str=EVAL_DIR                # directory to save eval data
     ):
+    '''Evaluate an agent across all three PROJECT_TRACKS (the reported set) using
+    the obstacle/bot counts from track_config. WORLD_NAME in track_config is
+    ignored (we run all three tracks); None -> packaged default counts.'''
+    agent_config = resolve_agent_config(agent_config)
+    track_config = resolve_track_config(track_config)
     race_type = get_race_type(track_config)
+    if 'WORLD_NAME' in track_config:
+        logger.info(
+            'evaluate() runs all PROJECT_TRACKS; ignoring track_config '
+            f'WORLD_NAME ({track_config["WORLD_NAME"]!r}).'
+        )
 
-    eval_world_names = ([
-        'reInvent2019_wide',    # A to Z Speedway
-        'reInvent2019_track',   # Smile Speedway
-        'Vegas_track',          # AWS Summit Raceway
-    ])
-    
-    eval_device = torch.device('cpu')
-    agent.eval().to(eval_device)
-    os.makedirs(directory, exist_ok=True)
+    agent.eval().to(torch.device('cpu'))
 
     status = PROGRESS_MANAGER.status_bar(
         status_format=race_type + u' {fill}Evaluating {track}{fill}{elapsed}',
@@ -362,29 +430,22 @@ def evaluate(
         autorefresh=True, min_delta=0.5
     )
     eval_metrics = {}
-    for world_name in eval_world_names:
+    for world_name in PROJECT_TRACKS:
         status.update(track=world_name)
         status.refresh()
-        eval_metrics[world_name] = evaluate_track(
-            agent=agent,
-            world_name=world_name,
-            agent_config=agent_config,
-            track_config=track_config,
-            environment_name=environment_name,
-            directory=directory
+        eval_metrics[world_name] = _eval_one(
+            agent, agent_config, {**track_config, 'WORLD_NAME': world_name}
         )
     status.close()
-    
-    with open(f'{directory}/{race_type}-{agent.name}.json', '+w') as f:
-        json.dump(eval_metrics, f)
 
+    _write_eval_metrics(directory, race_type, agent.name, eval_metrics, overwrite=True)
     return eval_metrics
 
 
 def plot_metrics(
         data,
         title,
-        directory: str='./plots'               # directory to save plots
+        directory: str=PLOTS_DIR               # directory to save plots
     ):
 
     df_progress = pd.DataFrame([
@@ -393,7 +454,7 @@ def plot_metrics(
         for progress in values["progress"]
     ])
 
-    # Replace NaNs with -inf in lap time data
+    # Replace NaNs with a large sentinel in lap time data
     df_lap_time = pd.DataFrame([
         {
             "Track": track,
@@ -410,10 +471,12 @@ def plot_metrics(
     # Create the plots
     fig, ax = plt.subplots(1, 2, figsize=(8, 4))
 
-    # Boxplot for progress
+    # Boxplot for progress (hue=Track keeps seaborn>=0.14 happy with a palette)
     sns.boxplot(
         x="Track",
         y="Progress",
+        hue="Track",
+        legend=False,
         data=df_progress,
         ax=ax[0],
         palette='deep',
@@ -425,10 +488,12 @@ def plot_metrics(
         flierprops={'marker': 'x'}
     );
 
-    # Boxplot for lap time (handling -inf values)
+    # Boxplot for lap time
     sns.boxplot(
         x="Track",
         y="Lap Time",
+        hue="Track",
+        legend=False,
         data=df_lap_time,
         ax=ax[1],
         palette='deep',
@@ -439,13 +504,9 @@ def plot_metrics(
             },
         flierprops={'marker': 'x'}
     );
-    
+
     fig.suptitle(title)
 
-    # plt.xlabel(xlabel, fontsize=FS_LABEL)
-    # plt.ylabel(ylabel, fontsize=FS_LABEL)
-    # plt.yticks(fontsize=FS_TICK)
-    # plt.xticks(fontsize=FS_TICK)
     plt.setp(ax[0].get_xticklabels(), rotation=45)
     plt.setp(ax[1].get_xticklabels(), rotation=45)
     ax[1].set_yscale('log')
