@@ -10,7 +10,7 @@ from deepracer_gym.envs.utils import (
 )
 
 # pre-processing parameters
-LIDAR_RANGE_MAX: float=1.00
+LIDAR_RANGE_MAX: float=2.00
 LIDAR_RANGE_MIN: float=0.15
 CAMERA_MAX_MEASUREMENT: int=255
 
