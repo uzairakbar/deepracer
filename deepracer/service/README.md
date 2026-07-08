@@ -1,47 +1,41 @@
-# deepracer/service — the simulator image, as a patch series over upstream
+# DeepRacer Gym Service
 
-The DeepRacer simulator image is built from the **public**
+The DeepRacer Gym service is built as a patch series from
 [`aws-deepracer-community/deepracer-simapp`](https://github.com/aws-deepracer-community/deepracer-simapp)
-plus a small set of patches that repurpose it into a pure, training-free
-simulation served to the `deepracer_gym` client over ZMQ. **We do not fork the
-upstream** — we version only our delta.
+to repurpose it into a training-free
+simulation served to the `deepracer_gym` client over ZMQ.
 
 ## Layout
 ```
 service/
-├── upstream/      git submodule → aws-deepracer-community/deepracer-simapp, pinned (v6.0.5).
-│                  The single global pin: its commit is the base for every patch.
-├── patches/       our delta as a git-am-able series (git format-patch output).
-├── scripts/       init_workspace / export_patches / build / bump_upstream.
-├── workspace/     git-IGNORED dev sandbox (created on demand). Edit here, not in upstream/.
+├── upstream/      git submodule → aws-deepracer-community/deepracer-simapp, pinned (v6.0.5)
+├── patches/       our delta as a patch series
+├── scripts/       scripts to setup workspace, apply / record patches, and build the service
+├── workspace/     git-IGNORED dev sandbox to edit + commit + patch the upstream source code
 └── README.md
 ```
 
-The image = `upstream @ pinned` + `patches/*` → built by `build-zmqsim.sh`
-(which the patches add): it builds the CPU base (compiling the patched `bundle/`)
-then layers the ZMQ-sim overlay. Output: `uzairakbar/deepracer-test:v0`.
-
-## Develop the simulator (edit the patched source)
+## Setup workspace
+Because the upstream `aws-deepracer-community/deepracer-simapp` is a read-only vendored source, we cannot edit `upstream/` directly. Therefore, all development is done in a git-ignored `workspace/` sandbox with the following workflow:
 ```bash
-deepracer/service/scripts/init_workspace.sh     # upstream@pin + patches, as commits, in workspace/
-cd deepracer/service/workspace                  # a normal git repo — edit, commit, test
+deepracer/service/scripts/init_workspace.sh     # move upstream@pin + patches to workspace/
+cd deepracer/service/workspace                  # normal git repo; edit, commit, test here
 # ... make changes, git commit ...
 deepracer/service/scripts/export_patches.sh     # write commits back to ../patches/
-git add deepracer/service/patches && git commit # in the monorepo
+git add deepracer/service/patches && git commit # commit patches to this monorepo
 ```
-Never edit `upstream/` directly — it's read-only vendored source. `workspace/` is
-git-ignored, so you can't accidentally disturb the submodule pointer.
 
-## Build the image (needs Docker; not available on PACE)
+## Build the image
+To build the simulator service image from source (`upstream @ pin` + `patches/*`), use the `scripts/builf.sh` script as:
 ```bash
 ARCH=amd64 OUT_IMAGE=uzairakbar/deepracer-test:v0-amd64 PUSH=1 \
   deepracer/service/scripts/build.sh
 ```
-CI (`.github/workflows/build-service-image.yml`) does this for amd64+arm64 and
-stitches a multi-arch manifest. Offline-capable: it reads the vendored submodule,
-no network fetch of upstream at build time.
+Our CI (`.github/workflows/build-service-image.yml`) does this for amd64+arm64 and
+stitches a multi-arch manifest.
 
-## Bump the upstream version (deliberate, reviewed)
+## Bump the upstream version
+To bump the `upstream/` submodule pointer to another version, use the following script:
 ```bash
 deepracer/service/scripts/bump_upstream.sh <new-upstream-tag>
 # resolve any 3-way conflicts in workspace/, rebuild + validate, then:
@@ -49,4 +43,3 @@ deepracer/service/scripts/export_patches.sh
 git add deepracer/service/upstream deepracer/service/patches
 git commit -m "chore(service): bump upstream to <new-upstream-tag>"
 ```
-Moving the submodule pointer is the single-place version change.

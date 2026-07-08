@@ -1,25 +1,43 @@
-# A Gymnasium Wrapper for DeepRacer
+# DeepRacer Gym
 
-## Setup
-### Dependencies
-- A container runtime: Docker, Podman or Apptainer.
-- Python 3.10 or higher.
+A Gymnasium environment for the [AWS DeepRacer](https://github.com/aws-deepracer-community/deepracer-for-cloud) simulator. Each `deepracer-v0`
+environment automatically launches its own simulator with Docker, Podman, or
+Apptainer, then exposes it through the standard `gymnasium` API.
 
-### Install
+## Table of Contents
+
+- [Installation](#installation)
+- [Quick Start](#quick-start)
+- [Configuring Environments](#configuring-environments)
+- [Gymnasium API](#gymnasium-api)
+- [Managing Environments](#managing-environments)
+- [Troubleshooting](#troublesheeting)
+
+## Installation
+
+Requirements:
+
+- Python 3.10+
+- Docker, Podman, or Apptainer
+- Suficient HW resources (Recommended ~3 CPUs, ~6GB RAM)
+
+From the `client/` directory:
+
 ```bash
-pip install -e ./
+pip install -e .
 ```
 
-## Start and manage environments
-Constructing a `deepracer-v0`
-environment starts its own simulator container (Docker/ Podman/ Apptainer), and `env.close()` stops it. The first run
-pulls the image (~several GB, one-time); each subsequent sim boots in ~1 minute.
+On first use, the simulator image is downloaded automatically. It is several GBs,
+so the first launch may take a few minutes. Later launches reuse the cached
+image.
+
+## Quick Start
 
 ```python
 import gymnasium as gym
 import deepracer_gym
 
-env = gym.make('deepracer-v0')      # starts a simulator on demand
+env = gym.make('deepracer-v0')      # starts a simulator service on demand
 
 observation, info = env.reset()
 
@@ -27,64 +45,50 @@ observation, reward, terminated, truncated, info = env.step(
     env.action_space.sample()
 )
 
-env.close()                         # stops and removes the simulator container
+env.close()                         # stops + remove the simulator service
 ```
 
-To see which simulators are currently running and to reap orphans:
-```python
-import deepracer_gym
-deepracer_gym.running()             # names of running managed simulators
-deepracer_gym.shutdown_all()        # stop everything this process started
-```
-```bash
-python -m deepracer_gym.clean       # reap orphans from a crashed kernel
-```
+## Configuring Environments
 
-For more details, see the [`gymnasium` API section](#gymnasium-API) below.
-
-## Configuration
-The environment is configured through **three optional arguments** to
-`gym.make`. Omit any of them to use the packaged default.
-
-| Argument | Type | Replaces the old | Controls |
-|---|---|---|---|
-| `agent_config` | `dict` or `None` | `configs/agent_params.json` | action space + sensors |
-| `track_config` | `dict` or `None` | `configs/environment_params.yaml` | world + obstacles + bot cars |
-| `reward_function` | callable or `None` | `configs/reward_function.py` | the reward (computed client-side) |
+`deepracer-v0` works with packaged [defaults](./deepracer_gym/defaults/), but you can customize it through
+`gym.make()`:
 
 ```python
 env = gym.make(
     'deepracer-v0',
-    agent_config=my_agent_dict,       # see schema below; None -> packaged default
-    track_config=my_track_dict,
-    reward_function=my_reward_fn,
+    agent_config=agent_config,          # action space + sensors
+    track_config=track_config,          # track, bots, obstacles
+    reward_function=reward_function,    # custom reward function
+    cpus=3, memory='6g',                # allocate sim resources
+    cache=True,                         # keep sim warm on close
 )
 ```
+Most students will only need `reward_function`, `agent_config`, and `track_config`, each of which is describe below.
 
-### Reward function
+### Reward Function
 The reward function accepts the AWS DeepRacer
-[input parameters](https://docs.aws.amazon.com/deepracer/latest/developerguide/deepracer-reward-function-input.html),
-which are also exposed in `info['reward_params']`.
-
+[input parameters](https://docs.aws.amazon.com/solutions/latest/deepracer-on-aws/create-a-model.html#input-parameters) and returns a numeric reward. The same parameters are exposed in `info['reward_params']`. You can use the packaged [default](./deepracer_gym/defaults/reward_function.py) reward function, or define a custom one:
 ```python
 def reward_function(params):
-    return float(params['progress'])   # example
+    # example reward function
+    return float(params['progress'])
 ```
-For motivation on designing reward functions for different race types, see the
-[AWS DeepRacer reward function examples](https://docs.aws.amazon.com/deepracer/latest/developerguide/deepracer-reward-function-examples.html).
+For examples and design ideas, see the AWS DeepRacer
+[reward function examples](https://docs.aws.amazon.com/solutions/latest/deepracer-on-aws/create-a-model.html#sample-reward-functions).
 
-### Agent parameters (`agent_config`)
-Defines the agent's action and observation space. The settings of relevance[^1]:
+
+### Agent Config
+The `agent_config` defines the agent's action and observation space. The settings of relevance are:
 
 | Parameter | Description |
 |---|---|
 | `action_space_type` | Can be `discrete` or `continuous`. |
 | `action_space` | Defines the action space in terms of `speed` and `steering_angle`. See examples below. |
-| `sensor` | Can be `FRONT_FACING_CAMERA` (a $160\times 120$ colored image), `STEREO_CAMERAS` (two $160\times 120$ greyscale images) and/or `LIDAR` ($64$ radial readings). Two camera sensors cannot be selected at once, and LiDAR cannot be selected alone. See the [AWS DeepRacer sensors page](https://docs.aws.amazon.com/deepracer/latest/developerguide/deepracer-choose-race-type.html). |
+| `sensor` | Can be `FRONT_FACING_CAMERA` (a $160\times 120$ colored image), `STEREO_CAMERAS` (two $160\times 120$ greyscale images) and/or `LIDAR` ($64$ radial readings). Two camera sensors cannot be selected at once, and LiDAR cannot be selected alone. See the [AWS DeepRacer sensors page](https://docs.aws.amazon.com/solutions/latest/deepracer-on-aws/create-a-model.html#sensors). |
 
-The packaged default is the discrete stereo-camera + LiDAR example below.
+We provide two examples below:
 
-#### Discrete actions with LiDAR + stereo camera (the packaged default)
+#### Discrete actions with LiDAR + stereo camera (the packaged [default](./deepracer_gym/defaults/agent_params.json))
 ```python
 agent_config = {
     "action_space": [
@@ -96,8 +100,6 @@ agent_config = {
     ],
     "action_space_type": "discrete",
     "sensor": ["STEREO_CAMERAS", "LIDAR"],
-    "neural_network": "DEEP_CONVOLUTIONAL_NETWORK_SHALLOW",
-    "version": "6",
 }
 ```
 
@@ -110,48 +112,42 @@ agent_config = {
     },
     "action_space_type": "continuous",
     "sensor": ["FRONT_FACING_CAMERA", "LIDAR"],
-    "neural_network": "DEEP_CONVOLUTIONAL_NETWORK_SHALLOW",
-    "version": "6",
 }
 ```
 
-[^1]: Please do not change the `neural_network` and `version` fields. `version` tracks the simulator's model-metadata version; keep it at `"6"` (values `< 5` make training markedly less stable).
-
-### Environment parameters (`track_config`)
-Defines the environment (world, obstacles, bot cars). See the
+### Track Config
+The `track_config` defines the environment (world, obstacles, bot cars). See the
 [DeepRacer-for-cloud documentation](https://aws-deepracer-community.github.io/deepracer-for-cloud/reference.html)
-for the description of these parameters. Example:
+for a description of available parameters, e.g. the packaged [default](./deepracer_gym/defaults/environment_params.yaml). Example:
 ```python
 track_config = {
-    "WORLD_NAME": "reInvent2019_track",
-    "NUMBER_OF_OBSTACLES": "0",
-    "NUMBER_OF_BOT_CARS": "0",
+    "WORLD_NAME": "reInvent2019_wide",
+    "NUMBER_OF_OBSTACLES":  "0",
+    "NUMBER_OF_BOT_CARS":   "0",
+    # ... and more.
 }
 ```
+The `WORLD_NAME` defines the track. You can find all track names [here](./deepracer_gym/defaults/tracks.txt), and view their layouts [here](https://github.com/aws-deepracer-community/deepracer-race-data/blob/main/raw_data/tracks/README.md).
 
-#### List of tracks
-The track is selected with the `WORLD_NAME` parameter. The full set of valid
-names (127 tracks) is shipped with the package and validated against your
-`track_config` before launch — a misspelled name raises with a close-match
-suggestion. You can find the layouts
-[here](https://github.com/aws-deepracer-community/deepracer-race-data/blob/main/raw_data/tracks/README.md).
-Common ones include `reInvent2019_track`, `Vegas_track`, `Austin`, `Monaco`,
-`Spain_track`, `Singapore`, `Oval_track`, and `Straight_track`.
+## Gymnasium API
+The DeepRacer environment follows the standard `gymnasium` API:
 
-## `gymnasium` API
-The DeepRacer environment follows the standard `gymnasium` API. Here are the key components:
-
-### Environment Creation
 ```python
 import gymnasium as gym
 import deepracer_gym
 
-env = gym.make('deepracer-v0')
-```
+env = gym.make('deepracer-v0')      # create an environment
 
+observation, info = env.reset()     # start an episode
+
+observation, reward, terminated, truncated, info = env.step(
+    env.action_space.sample()       # rollout
+)
+```
+Three key components of observation space, action space, and terminal states are described below.
 ### Observation Space
 The observation space is a composite [`gymnasium.spaces.Dict`](https://gymnasium.farama.org/api/spaces/composite/)
-containing the following keys/values, depending on the sensors in your `agent_config`:
+containing the following keys/values, depending on the sensors you specify in `agent_config`:
 ```python
 {
     # two 8-bit greyscale (1 channel) images
@@ -180,28 +176,8 @@ and 1 representing the `low` and `high` values of the respective quantity.
 
 [^2]: For continuous action spaces, the `steering_angle` and `speed` occupy the 1st and 2nd indices of the 2D action vector/list as `[normalized_steering_angle, normalized_speed]`.
 
-### Environment Step
-```python
-observation, reward, terminated, truncated, info = env.step(action)
-```
-
-The step function returns:
-- `observation`: Dictionary of sensor readings
-- `reward`: Float value from reward function
-- `terminated`: Boolean indicating episode end due to:
-  - Crash
-  - Off-track
-  - Reversed direction
-  - Lap completion
-- `truncated`: Boolean indicating episode end due to:
-  - Time/Step limit
-  - Immobilization
-- `info`: Dictionary containing:
-  - `reward_params`: Parameters used in reward calculation
-  - `episode_status`: Current episode state
-
 ### Terminal States
-The `terminated` flag is triggered by the following in `info['episode_status']`.
+The `terminated` flag is triggered by the following in `info['episode_status']`:
 ```yaml
 {
     "lap_complete": float,  # same as info['reward_params']['progress'] >= 100
@@ -210,7 +186,7 @@ The `terminated` flag is triggered by the following in `info['episode_status']`.
     "reversed": boolean,    # progress decreases for 15 consecutive steps. NOT accessible in info['reward_params'].
 }
 ```
-The `truncated` flag is triggered by the following (not accessible in `info['reward_params']`).
+The `truncated` flag is triggered by the following (not accessible in `info['reward_params']`):
 ```yaml
 {
     "immobilized": boolean,     # move <= 0.0003 for 15 consecutive steps
@@ -218,41 +194,51 @@ The `truncated` flag is triggered by the following (not accessible in `info['rew
 }
 ```
 
-### Environment Reset
+## Managing Environments
+
+Each `gym.make("deepracer-v0")` creates a Gymnasium environment and, by default,
+starts one simulator service behind it. When you are done with the environment,
+call `env.close()` so the simulator is stopped and removed.
+
+If you are creating many environments in one process, simulator startup time can
+become noticeable. Use `cache=True` to keep a ***matching*** simulator warm after
+`close()` so a later environment with the same configuration can reuse it.
+
 ```python
-observation, info = env.reset()
+env = gym.make("deepracer-v0", cache=True)
+env.close()  # keeps the matching simulator warm for reuse in this process
 ```
 
-### Environment Close
-```python
-env.close()
-```
-`env.close()` stops and removes the simulator. For a plain env this is all you
-need. If you constructed the env via `gym.make` (which wraps it) and want to
-override the close-time cache behavior, use `deepracer_gym.close(env, cache=…)`
-or `env.unwrapped.close(cache=…)` — gymnasium's `Wrapper.close()` does not
-forward keyword arguments.
+A cached simulator is only reused within the same Python process. When you are
+completely done, or if you want to reclaim resources, stop managed simulators:
 
-### Rendering
 ```python
-# Returns numpy array
-env = gym.make('deepracer-v0', render_mode='rgb_array')
+import deepracer_gym
+
+deepracer_gym.running()       # list managed simulators on this host
+deepracer_gym.shutdown_all()  # stop simulators owned by this process
 ```
 
-### Running several environments
-Each `deepracer-v0` env provisions its own simulator on its own port, so you can
-run up to `DEEPRACER_MAX_ENVS` (default `4`) at once — including via
-`gym.vector.SyncVectorEnv` with `num_envs > 1`. Each env is a full simulator
-(~3 CPU / 6 GB, ~1 min cold start), so this is real parallelism at a real
-resource cost, not free. A 5th concurrent env raises a clear error.
+If your notebook, script, or job is interrupted, a simulator can be left behind.
+Use the cleanup command before starting another batch of environments:
 
-## Limitations, Problems and Troubleshooting
-- If Docker does not work for you without `sudo`, please follow the instructions in [`SETUP.md`](../SETUP.md) to add it to the `docker` group.
-- The **first** `gym.make('deepracer-v0')` can be slow: the simulator image is
-  downloaded (~several GB) before the container starts. This is a one-time cost;
-  subsequent runs reuse the cached image and boot in ~1 minute.
-- On HPC (Apptainer) the image is pulled once to a cached `.sif` under
-  `$SCRATCH` (else `~/scratch`) and reused. If a run leaves an orphaned
-  simulator, `python -m deepracer_gym.clean` stops instances and clears
-  overlays/logs.
+```bash
+python -m deepracer_gym.clean
+```
+
+`python -m deepracer_gym.clean` removes managed Docker/Podman containers and
+DeepRacer Apptainer instances left behind by interrupted runs.
+
+By default, a process can manage up to `DEEPRACER_MAX_ENVS=4` simulators at the
+same time. Each simulator is heavy: budget roughly 3 CPUs, 6 GB of memory, and
+about a minute of startup time
+
+
+## Troubleshooting
+- If Docker does not work for you without `sudo`, please follow the instructions in [`SETUP.md`](../SETUP.md) to add it to the `docker` group or use Podman/Apptainer.
+- The **first** `gym.make('deepracer-v0')` can be slow because the simulator image is
+  downloaded before the container starts. This is a one-time cost.
+- If a run leaves an orphaned
+  simulator, use `python -m deepracer_gym.clean` to stops instances and clear
+stale runtime files.
 - We have tried to diligently test the simulator and various configurations for this project. However, it is entirely possible that some edge-cases may have gone overlooked. Should you encounter one, please hop into an OH or reach out to a TA to get it fixed ASAP.
