@@ -5,7 +5,7 @@ import getpass
 from dataclasses import dataclass
 
 
-# unprivileged TCP band (mirrors the bash string_to_port and envs.utils)
+# Unprivileged TCP band shared with envs.utils and shell tooling.
 PORT_LO: int=1024
 PORT_HI: int=32767
 # Xvfb display base: high enough to dodge a real desktop's :0 on a shared node.
@@ -15,14 +15,14 @@ ROS_DOMAIN_SPAN: int=101
 
 
 def _sha_int(string: str) -> int:
-    '''First 4 bytes of sha256(string) as a big-endian int (matches entrypoint.sh).'''
+    '''First 4 bytes of sha256(string) as a big-endian integer.'''
     return int.from_bytes(
         hashlib.sha256(string.encode()).digest()[:4], byteorder='big'
     )
 
 
 def string_to_port(string: str) -> int:
-    '''Deterministic port in [PORT_LO, PORT_HI]. Same mapping as envs.utils and the bash.'''
+    '''Deterministic port in the unprivileged range.'''
     return PORT_LO + (_sha_int(string) % (PORT_HI - PORT_LO + 1))
 
 
@@ -71,9 +71,8 @@ def port_is_free(port: int, host: str='127.0.0.1') -> bool:
     '''True if nothing is currently bound to host:port.
 
     Probes by binding WITHOUT SO_REUSEADDR so an active listener (a running sim,
-    ours or another kernel's / user's) is detected as busy. This is the
-    hash-then-PROBE step: hashing alone can't tell whether a port is already
-    taken on a shared node (the MinIO lesson, REFACTOR_DESIGN.md §9).
+    ours or another kernel's / user's) is detected as busy. Hashing alone cannot
+    tell whether a deterministic port is already taken on a shared node.
     '''
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as probe:
         try:
@@ -88,10 +87,7 @@ def free_env_id(
         max_envs: int,
         taken: set[int]=frozenset(),
     ) -> Identity:
-    '''First env_id in [0, max_envs) whose port is free and not already owned.
-
-    Raises RuntimeError if all slots are busy (the MAX_ENVS cap, §6.1).
-    '''
+    '''First env_id in [0, max_envs) whose port is free and not already owned.'''
     for env_id in range(max_envs):
         if env_id in taken:
             continue
@@ -112,7 +108,7 @@ def fingerprint(
         evaluation: bool=False,
         world_name: str | None=None,
     ) -> str:
-    '''Stable short hash identifying a reusable sim configuration (§4.11).
+    '''Stable short hash identifying a reusable sim configuration.
 
     Excludes the reward function (computed client-side) and per-instance identity
     (fresh each start). Two envs with the same fingerprint may reuse one warm

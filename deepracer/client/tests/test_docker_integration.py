@@ -1,9 +1,4 @@
-"""End-to-end container-management tests on REAL Docker via the fake-sim image.
-
-These prove the backend + manager + ports + labels + keep_warm + concurrency work
-against a live runtime. The heavy amd64 sim only adds Gazebo boot time (validated
-on PACE); every lifecycle mechanism our code owns is exercised here for real.
-"""
+"""End-to-end container-management tests against the fake simulator in Docker."""
 import json
 
 import pytest

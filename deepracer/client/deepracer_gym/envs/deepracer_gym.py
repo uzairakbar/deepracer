@@ -76,11 +76,9 @@ class DeepracerGymEnv(gym.Env):
         super().__init__(**kwargs)
         self.render_mode = render_mode
 
-        # --- normalize + validate configs (fail fast, before any container) ---
         agent_config = resolve_agent_config(agent_config)
         track_config = resolve_track_config(track_config)
-        # non-eval world_name overrides the track's WORLD_NAME (routing);
-        # eval mode routes it to EVAL_WORLD_NAME via the manager/spec instead.
+        # Non-eval world_name replaces WORLD_NAME; eval mode passes EVAL_WORLD_NAME.
         if world_name and not evaluation:
             track_config = {**track_config, 'WORLD_NAME': world_name}
         from deepracer_gym.service.validate import validate_configs
@@ -88,7 +86,6 @@ class DeepracerGymEnv(gym.Env):
             agent_config, track_config, world_name=world_name, evaluation=evaluation,
         )
 
-        # --- spaces come straight from the agent_config dict ------------------
         self.action_space, self._action_metadata = make_action_space(agent_config)
         self.observation_space, self._observation_metadata = make_observation_space(agent_config)
         self.reward_function = (
@@ -96,7 +93,6 @@ class DeepracerGymEnv(gym.Env):
             else default_reward_function()
         )
 
-        # --- provision (or attach to) the sim container -----------------------
         self._cache = cache
         self._manager = None
         self._handle = None
@@ -112,7 +108,7 @@ class DeepracerGymEnv(gym.Env):
                 evaluation=evaluation, world_name=world_name,
             )
             connect_port = self._handle.port
-            # safety net for a forgotten close(); the documented API is close().
+            # Safety net for a forgotten close(); the documented API is close().
             self._finalizer = weakref.finalize(
                 self, _release, self._manager, self._handle, self._cache,
             )

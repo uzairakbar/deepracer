@@ -83,10 +83,8 @@ def action_space_type(config: dict):
         space_type = config['action_space_type']
     else:
         if isinstance(config['action_space'], list):
-            # assuming discrete
             space_type = 'discrete'
         elif isinstance(config['action_space'], dict):
-            # assuming continuous
             space_type = 'continuous'
         else:
             raise ValueError(

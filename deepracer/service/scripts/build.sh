@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
-# Assemble (pinned upstream + patches) into a throwaway tree and build the image.
-# Offline: reads the vendored submodule, no network. Requires DOCKER (not on PACE;
-# use a docker host or the monorepo CI). Env passthrough to build-zmqsim.sh:
+# Assemble the pinned upstream plus patches in a temporary tree and build the image.
+# Offline: reads the vendored submodule, no network. Requires Docker.
+# Env passthrough to build-zmqsim.sh:
 #   ARCH=amd64|arm64   OUT_IMAGE=uzairakbar/deepracer-test:v0[-<arch>]   PUSH=0|1
 set -euo pipefail
 SERVICE="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"

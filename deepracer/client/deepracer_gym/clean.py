@@ -1,11 +1,9 @@
-"""Maintenance CLI: stop & remove orphaned DeepRacer sims.
+"""Maintenance CLI for removing orphaned DeepRacer sims.
 
     python -m deepracer_gym.clean
 
-Removes any managed containers (Docker/Podman) and Apptainer instances left
-running (e.g. keep_warm sims, or leftovers from a crashed/killed kernel), plus
-their per-instance overlays and Apptainer's never-rotated instance logs. Best-
-effort and idempotent — safe to run anytime.
+Removes managed Docker/Podman containers, DeepRacer Apptainer instances,
+per-instance overlays, and stale Apptainer logs. Best-effort and idempotent.
 """
 import os
 import glob

@@ -1,9 +1,4 @@
-"""Full client path on real Docker: gym env -> manager -> container -> ZMQ.
-
-Exercises DeepracerGymEnv.__init__/reset/step/close wired to SimulationManager,
-against the ZMQ fake-sim (real container, real msgpack protocol). The heavy sim
-only adds Gazebo boot; the whole client integration is proven here.
-"""
+"""Full client path against the fake simulator in Docker."""
 import numpy as np
 import pytest
 
@@ -97,9 +92,7 @@ def test_manage_container_false_starts_nothing(fake_image, fake_manager):
 
 
 def test_gym_make_cache_close_through_wrapper_keeps_warm(fake_image, fake_manager):
-    # THE item-5 win: cache is a constructor arg (forwarded by gym.make), so a plain
-    # env.close() *through the wrapper* honors cache=True and keeps the container
-    # warm -- no .unwrapped needed. shutdown_all then reclaims it.
+    # gym.make forwards cache=True to the env, so wrapper close keeps it warm.
     import gymnasium as gym
     import deepracer_gym
 
@@ -107,7 +100,7 @@ def test_gym_make_cache_close_through_wrapper_keeps_warm(fake_image, fake_manage
                    image=fake_image, cpus=1.0, memory='512m', cache=True)
     handle = env.unwrapped._handle
     env.reset()
-    env.close()                                  # wrapper close, no kwargs -> honors cache=True
+    env.close()                                  # wrapper close honors cache=True
     assert fake_manager.backend.is_alive(handle)
     deepracer_gym.shutdown_all()                 # reclaim warm containers
     assert not fake_manager.backend.is_alive(handle)

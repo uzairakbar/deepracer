@@ -1,14 +1,10 @@
-"""A tiny ZMQ stand-in for the DeepRacer sim container.
+"""ZMQ stand-in for the DeepRacer sim container.
 
-Speaks exactly the REQ/REP msgpack protocol the client (gym_adapter +
-zmq_client) expects, so the full gym.make -> reset -> step -> close path can be
-tested on a real runtime without the multi-GB amd64 sim. It also reproduces the
-container-management contract our code depends on:
-  - binds GYM_PORT (Docker/Podman set it to the internal 8888),
-  - materializes /configs from the DEEPRACER_* env vars (the §5.1 mechanism),
-  - prints the "Waiting for gym client" readiness marker (as real gym_agent does),
-  - re-serves the next client after a disconnect (the cache/attach property).
-FAKE_CRASH=1 makes it exit non-zero with a FATAL line (readiness test).
+Implements the REQ/REP msgpack protocol used by gym_adapter and zmq_client so
+the gym.make -> reset -> step -> close path can run against a lightweight image.
+It also binds GYM_PORT, materializes /configs from DEEPRACER_* env vars, prints
+the readiness marker, and accepts a new client after disconnect. FAKE_CRASH=1
+exits non-zero with a FATAL line for readiness tests.
 """
 import os
 import sys
@@ -42,7 +38,7 @@ def materialize_configs():
 def observation(step, game_over):
     return {
         '_next_state': {
-            # H, W, C — the client transposes CAMERA sensors to C, H, W
+            # The client transposes camera observations from H, W, C to C, H, W.
             'STEREO_CAMERAS': np.zeros((120, 160, 2), dtype=np.uint8),
             'LIDAR': np.ones((64,), dtype=np.float32),
         },
@@ -76,13 +72,13 @@ def main():
     port = int(os.environ.get('GYM_PORT', '8888'))
 
     socket = zmq.Context.instance().socket(zmq.REP)
-    socket.setsockopt(zmq.RCVTIMEO, 60_000)      # re-await after a client vanishes
+    socket.setsockopt(zmq.RCVTIMEO, 60_000)
     socket.bind(f'tcp://0.0.0.0:{port}')
     print(READY_MARKER, flush=True)
 
-    while True:                                   # re-serve loop (survive disconnect)
+    while True:
         try:
-            socket.recv()                         # await {'ready': 1}
+            socket.recv()
         except zmq.Again:
             continue
         step = 1
@@ -92,7 +88,7 @@ def main():
             try:
                 request = msgpack.unpackb(socket.recv())
             except zmq.Again:
-                break                             # client gone -> back to await-ready
+                break
             if request.get('ready') is not None:  # a fresh reset handshake
                 step = 1
                 continue

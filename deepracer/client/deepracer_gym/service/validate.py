@@ -17,9 +17,9 @@ SUPPORTED_SENSORS: set[str]={
 RACE_TYPES: set[str]={
     'TIME_TRIAL', 'OBJECT_AVOIDANCE', 'HEAD_TO_BOT', 'HEAD_TO_MODEL',
 }
-# track_config keys expected to be non-negative integers (quoted-string form).
+# track_config keys expected to be non-negative integers.
 _INT_KEYS: tuple[str, ...]=('NUMBER_OF_OBSTACLES', 'NUMBER_OF_BOT_CARS')
-# ... and floats.
+# track_config keys expected to be numeric.
 _FLOAT_KEYS: tuple[str, ...]=(
     'LOWER_LANE_CHANGE_TIME', 'UPPER_LANE_CHANGE_TIME',
     'LANE_CHANGE_DISTANCE', 'MIN_DISTANCE_BETWEEN_BOT_CARS', 'BOT_CAR_SPEED',
@@ -99,9 +99,8 @@ def effective_world(
     ) -> str:
     '''The world the simulator will actually load (mirrors entrypoint EVAL_MODE).
 
-    Eval mode uses EVAL_WORLD_NAME (the world_name arg); otherwise the
-    track_config WORLD_NAME. The world_name arg also overrides WORLD_NAME in the
-    non-eval case (§4.6 routing).
+    Eval mode uses EVAL_WORLD_NAME from the world_name argument. Non-eval mode
+    uses world_name when provided, otherwise track_config WORLD_NAME.
     '''
     if evaluation and world_name:
         return world_name
@@ -121,10 +120,7 @@ def validate_configs(
         world_name: str | None=None,
         evaluation: bool=False,
     ):
-    '''Client-side, pre-launch validation. Raises ValueError with an actionable
-    message so a bad config fails in milliseconds instead of silently crashing
-    the sim after a ~1 min boot (§4.8).'''
-    # action space (reuse the existing validators)
+    '''Fail fast before launching the simulator for invalid configs.'''
     if 'action_space' not in agent_config:
         raise ValueError("agent_config must define 'action_space'.")
     validate_action_space_config(agent_config, action_space_type(agent_config))

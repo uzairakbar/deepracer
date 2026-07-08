@@ -5,9 +5,7 @@ from dataclasses import dataclass
 from deepracer_gym.service.identity import Identity, fingerprint
 
 
-# The pinned simulation image (kept as deepracer-test:v0, rebuilt in place while
-# in testing — REFACTOR_DESIGN.md §8). Overridable via DEEPRACER_IMAGE (e.g. a
-# local build, or a lightweight test image).
+# Default simulator image. Override DEEPRACER_IMAGE for local builds or tests.
 DEFAULT_IMAGE: str=os.environ.get('DEEPRACER_IMAGE', 'uzairakbar/deepracer-test:v0')
 # The container's internal ZMQ bind; OCI backends publish it to identity.port.
 INTERNAL_PORT: int=8888
@@ -17,7 +15,7 @@ LABEL_NS: str='deepracer'
 
 @dataclass
 class SimSpec:
-    '''Everything one sim needs to start — no files, all env-var transported.'''
+    '''Container startup inputs carried entirely through environment variables.'''
     identity: Identity
     agent_config: dict
     track_config: dict
@@ -36,8 +34,10 @@ class SimSpec:
 
 
 def spec_to_env(spec: SimSpec, gym_port: int | None=None) -> dict[str, str]:
-    '''The env-var dict handed to a backend (§4.3). Specs travel as JSON; the
-    entrypoint materializes /configs from these. Reward is NOT sent.
+    '''Environment passed to the simulator entrypoint.
+
+    Configs travel as compact JSON and are materialized as /configs inside the
+    container. Reward functions stay client-side and are not sent.
 
     `gym_port` is the port the sim binds *inside* the container: OCI backends
     (Docker/Podman) publish host:identity.port -> container:INTERNAL_PORT, so
@@ -64,10 +64,11 @@ def spec_to_env(spec: SimSpec, gym_port: int | None=None) -> dict[str, str]:
 
 
 def spec_labels(spec: SimSpec) -> dict[str, str]:
-    '''Discovery labels stamped on OCI containers so clean/running can find them
-    by querying the runtime (the runtime IS the registry). Note: OCI labels are
-    immutable after create; the manager tracks warm/busy state in-process only,
-    and containers are never shared across processes.'''
+    '''Discovery labels used to find managed OCI containers.
+
+    OCI labels are immutable after create. Warm/busy state is tracked only by the
+    in-process manager, and containers are never shared across processes.
+    '''
     return {
         f'{LABEL_NS}.managed': 'true',
         f'{LABEL_NS}.fingerprint': spec.fingerprint,

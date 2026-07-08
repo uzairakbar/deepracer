@@ -17,7 +17,7 @@ class DeepracerClientZMQ:
         self.port = port
         self.socket = zmq.Context().socket(zmq.REQ)
 
-        # Large timout for first connection
+        # First connection can include simulator startup time.
         self.socket.set(zmq.SNDTIMEO, TIMEOUT_LONG)
         self.socket.set(zmq.RCVTIMEO, TIMEOUT_LONG)
         # Do not block on close()/__del__ flushing an unsent request: if the sim

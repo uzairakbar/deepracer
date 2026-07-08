@@ -1,9 +1,4 @@
-"""Backend command-construction tests — no real Podman/Apptainer needed.
-
-These lock the exact argv each CLI backend emits (the §9 hard constraints:
-no --pwd, no config mount, explicit env, published port), so the PACE runtimes
-are covered by shape even though the real run happens on PACE.
-"""
+"""Backend command-construction tests for CLI runtimes."""
 from dataclasses import dataclass
 
 import pytest
@@ -23,7 +18,6 @@ def make_spec(env_id=0, **kw):
                    agent_config=AGENT, track_config=TRACK, **kw)
 
 
-# ---- pure argv --------------------------------------------------------------
 def test_podman_argv_publishes_port_and_passes_env_and_labels():
     spec = make_spec()
     argv = B.podman_run_argv(spec)
@@ -38,9 +32,9 @@ def test_podman_argv_publishes_port_and_passes_env_and_labels():
     assert 'DEEPRACER_AGENT_PARAMS=' in joined
     assert f'{LABEL_NS}.fingerprint={spec.fingerprint}' in joined
     # image is last, and a bare short name is docker.io-qualified so Podman's
-    # enforcing short-name-mode can't stall on a no-TTY registry prompt (§PACE)
+    # enforcing short-name-mode cannot stall on a no-TTY registry prompt.
     assert argv[-1] == B.qualify_image(spec.image)
-    assert '--pwd' not in argv                           # never
+    assert '--pwd' not in argv
     assert '-v' not in argv and '--volume' not in argv   # no mount
 
 
@@ -63,7 +57,7 @@ def test_apptainer_argv_no_pwd_no_mount_no_env_in_argv():
     spec = make_spec(env_id=1)
     argv = B.apptainer_run_argv(spec, sif='/scratch/deepracer.sif')
     assert argv[:3] == ['apptainer', 'instance', 'run']
-    assert '--pwd' not in argv                           # §9: PACE lacks it
+    assert '--pwd' not in argv
     assert '--bind' not in argv                          # no config mount
     assert '--env' not in argv                           # env goes via APPTAINERENV_*
     assert '--overlay' in argv
@@ -107,10 +101,8 @@ def test_apptainer_backend_start_uses_sif_and_apptainerenv(monkeypatch):
     handle = be.start(spec)
     assert handle.name == spec.identity.name
     assert handle.overlay == spec.identity.overlay
-    # no pre-existing instance (default Recorder output isn't valid JSON, so
-    # _instance_exists -> False) -> presence check, then straight to instance run,
-    # NO stop call. §PACE 2026-07-04: an unconditional stop-before-run raced with
-    # the fresh instance and could kill it within milliseconds of start.
+    # No listed instance means start without a stop call. An unconditional
+    # stop-before-run can race with a fresh instance.
     assert rec.calls[0][:4] == ['apptainer', 'instance', 'list', '--json']
     assert rec.calls[1][:3] == ['apptainer', 'instance', 'run']
     assert rec.calls[1][-2:] == ['/scratch/deepracer.sif', spec.identity.name]
@@ -131,8 +123,7 @@ def test_apptainer_backend_start_stops_a_genuinely_stale_instance(monkeypatch):
 
 
 def test_apptainer_backend_start_clears_stale_logs(monkeypatch):
-    # §PACE 2026-07-04: apptainer never rotates its per-name log files, so a
-    # past run's FATAL: line poisons _wait_ready. start() must delete them.
+    # Apptainer appends to per-name logs, so stale FATAL lines must be removed.
     spec = make_spec(env_id=2, image='/scratch/deepracer.sif')
     rec = Recorder()
     be = B.ApptainerBackend(executor=rec)
@@ -152,7 +143,6 @@ def test_detect_backend_env_override(monkeypatch):
     assert B.detect_backend().name == 'apptainer'
 
 
-# ---- CLI backends with an injected fake executor ----------------------------
 @dataclass
 class FakeResult:
     returncode: int = 0
