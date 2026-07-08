@@ -42,7 +42,7 @@ EVAL_EPISODES: int = 5
 ONLY_CPU: bool = False
 SEED: int=42
 
-# --- artifact output locations (everything the utils produce lives here) -----
+# Default artifact output locations.
 ARTIFACTS_DIR: str='./artifacts'
 DEMOS_DIR: str=f'{ARTIFACTS_DIR}/demos'
 EVAL_DIR: str=f'{ARTIFACTS_DIR}/evaluations'
@@ -66,8 +66,7 @@ RACE_TYPES: dict[str, dict[str, str]]={
 
 
 def race_config(race_type: str, world_name: str) -> dict:
-    '''Convenience to build a track_config for a canonical race type on a track.
-    You may also just write the track_config dict yourself (any counts allowed).'''
+    '''Build a track_config for a canonical race type on a track.'''
     if race_type not in RACE_TYPES:
         raise ValueError(
             f'Unknown race_type {race_type!r}; choose {list(RACE_TYPES)} '
@@ -118,8 +117,6 @@ def make_environment(
         track_config: dict | None=None,
         **kwargs
     ):
-    # agent_config / track_config are dicts (or None -> packaged defaults),
-    # passed straight through to the environment.
     environment = gym.make(
         environment_name,
         agent_config=agent_config,
@@ -143,9 +140,7 @@ def get_world_name(track_config: dict | None=None):
 
 
 def get_race_type(track_config: dict | None=None):
-    '''A human label for the race type implied by a track_config's counts, used to
-    name artifacts. Relaxed: returns a sensible label for ANY obstacle/bot combo
-    (never raises), so demo/evaluate accept intermediate/unusual configurations.'''
+    '''Artifact label for the obstacle/bot counts in track_config.'''
     tc = resolve_track_config(track_config)
     obstacles = int(tc.get('NUMBER_OF_OBSTACLES', 0))
     bots = int(tc.get('NUMBER_OF_BOT_CARS', 0))
@@ -169,7 +164,7 @@ def _to_env_action(action, action_space):
 
 def _check_agent_env_compatible(agent: Agent, environment, observation):
     '''Fail fast (before a whole run) if the agent does not fit the environment
-    built from this agent_config -- e.g. a mismatched action space or an encoder
+    built from this agent_config, such as a mismatched action space or an encoder
     that chokes on the observation shape.'''
     try:
         action = agent.get_action(torch.Tensor(observation)[None, :])
@@ -193,9 +188,7 @@ def demo(
         track_config: dict | None=None,
         directory: str=DEMOS_DIR               # directory to save videos
     ):
-    '''Record a video of an agent acting in the environment fully specified by
-    agent_config + track_config (any track, any obstacle/bot combo). None -> the
-    packaged defaults.'''
+    '''Record a video for the environment defined by agent_config and track_config.'''
     agent_config = resolve_agent_config(agent_config)
     track_config = resolve_track_config(track_config)
     world_name = get_world_name(track_config)
@@ -256,8 +249,9 @@ def demo(
     demo_environment.close()
     demo_progress.close()
 
-    # The RecordVideo wrapper names the file with our prefix + episode info; grab
-    # the latest matching video.
+    # The RecordVideo wrapper names the file automatically with the prefix + step info
+    # We'll grab the latest video with our given prefix
+    # e.g. 'agent_rl-video-episode-0.mp4' or similar
     filtered_videos = sorted(
         f for f in os.listdir(directory)
         if (
@@ -286,8 +280,7 @@ def demo(
 
 
 def _run_eval_episodes(agent: Agent, environment, world_name: str):
-    '''Run EVAL_EPISODES episodes on an already-built eval environment and return
-    {'progress': [...], 'lap_time': [...]}.'''
+    '''Run EVAL_EPISODES on an already-built eval environment.'''
     observation, info = environment.reset()
     _check_agent_env_compatible(agent, environment, observation)
 
@@ -348,11 +341,8 @@ def _run_eval_episodes(agent: Agent, environment, world_name: str):
 
 
 def _eval_one(agent: Agent, agent_config: dict, track_config: dict):
-    '''Build the eval sim for one track (from track_config's WORLD_NAME + counts),
-    run the episodes, tear it down, and return the metrics.'''
+    '''Evaluate one track_config and tear down its simulator.'''
     world_name = get_world_name(track_config)
-    # The environment provisions its own sim in evaluation mode on the requested
-    # track (no bash restart); closing it below tears the sim down.
     eval_environment = make_environment(
         evaluation=True, world_name=world_name,
         agent_config=agent_config, track_config=track_config,
@@ -384,7 +374,7 @@ def evaluate_track(
         agent: Agent,
         agent_config: dict | None=None,
         track_config: dict | None=None,
-        directory: str=EVAL_DIR                # directory to save eval data
+        directory: str=EVAL_DIR
     ):
     '''Evaluate an agent on a single track (WORLD_NAME + counts from track_config)
     over EVAL_EPISODES episodes; returns and saves progress + lap-time.'''
@@ -407,7 +397,7 @@ def evaluate(
         agent: Agent,
         agent_config: dict | None=None,
         track_config: dict | None=None,
-        directory: str=EVAL_DIR                # directory to save eval data
+        directory: str=EVAL_DIR
     ):
     '''Evaluate an agent across all three PROJECT_TRACKS (the reported set) using
     the obstacle/bot counts from track_config. WORLD_NAME in track_config is
@@ -445,7 +435,7 @@ def evaluate(
 def plot_metrics(
         data,
         title,
-        directory: str=PLOTS_DIR               # directory to save plots
+        directory: str=PLOTS_DIR
     ):
 
     df_progress = pd.DataFrame([
@@ -471,7 +461,7 @@ def plot_metrics(
     # Create the plots
     fig, ax = plt.subplots(1, 2, figsize=(8, 4))
 
-    # Boxplot for progress (hue=Track keeps seaborn>=0.14 happy with a palette)
+    # hue=Track keeps newer seaborn versions happy when a palette is set.
     sns.boxplot(
         x="Track",
         y="Progress",
