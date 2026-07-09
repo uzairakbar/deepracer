@@ -19,7 +19,7 @@ from src.utils import (
 
 DEVICE = device()
 # Default training hyper-parameters (these are just dummy example values).
-# Override any of them by passing a dict to run(), e.g. run({'total_timesteps': 4096}).
+# Override any of them by passing a dict to run(), e.g. run({'total_timesteps': 2048}).
 DEFAULT_HYPER_PARAMS: dict = {
     'seed':             42,
     'cpu_only':         False,
