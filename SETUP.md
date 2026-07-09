@@ -94,7 +94,7 @@ We recommend students to setup the project locally. However, in cases where that
 * Login to the [GeorgiaTech VPN Service](https://vpn.gatech.edu/global-protect/login.esp). Download and install the [GlobalProtect VPN client](https://vpn.gatech.edu/global-protect/getsoftwarepage.esp).
 * Using the VPN client, connect to [vpn.gatech.edu](vpn.gatech.edu) and login via your GeorgiaTech username and password.
 * Connect to the PACE ICE on-demand service at [ondemand-ice.pace.gatech.edu](https://ondemand-ice.pace.gatech.edu/pun/sys/dashboard).
-* Click on 'My Interactive Sessions' and select whichever one you prefer on the 'Interactive Apps' menu (we recommend Coder or VS Code).
+* Click on 'My Interactive Sessions' and select whichever one you prefer on the 'Interactive Apps' menu (we recommend VS Code).
 
 ### Environment setup
 Please note that PACE ICE machines already come with rootless **Podman**, **Apptainer**, and UV installed (use `module load uv`). As such, you do not need Docker: the container runtime is auto-detected (Podman is preferred, with Apptainer as a fallback), so you can follow the instructions from the [python environment section](#Python-environment) exactly as written.
@@ -104,9 +104,17 @@ Please note that PACE ICE machines already come with rootless **Podman**, **Appt
 module load uv
 export UV_CACHE_DIR="$HOME/scratch/.cache/uv"
 uv pip install . --upgrade-package torch
+
+# For CPU-only PyTorch instead:
+# uv pip install . --upgrade-package torch \
+#     --extra-index-url https://download.pytorch.org/whl/cpu
 ```
 If this doesn't fix things, then do a full clean slate and [re-build the python environment](#Python-environment):
 ```bash
-source scripts/cleanup_deepracer.sh
+SCRATCH_DIR="$HOME"/scratch
+rm -rf .venv                            # remove local venv symlink
+rm -rf "$SCRATCH_DIR/uv_envs/deepracer" # remove the actual venv dir
+rm -rf "$SCRATCH_DIR/.cache/uv"         # clear the uv cache
+rm -f uv.lock                           # delete lockfile for fresh re-builds
 # Then follow the standard Python environment setup steps again
 ```
