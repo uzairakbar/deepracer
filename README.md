@@ -20,7 +20,7 @@ Please see the detailed setup instructions in [`SETUP.md`](https://github.gatech
 import gymnasium as gym
 import deepracer_gym
 
-env = gym.make('deepracer-v0')          # starts a simulator on demand
+env = gym.make('deepracer-v0')
 
 observation, info = env.reset()
 
@@ -28,7 +28,7 @@ observation, reward, terminated, truncated, info = env.step(
     env.action_space.sample()
 )
 
-env.close()                             # stops and removes the simulator
+env.close()
 ```
 
 See the [`deepracer/client/`](deepracer/client/) directory and the
