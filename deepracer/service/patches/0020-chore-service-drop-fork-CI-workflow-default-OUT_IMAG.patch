@@ -1,0 +1,118 @@
+From 02d12c2475dc34c98b443d107b02a31d4da8426f Mon Sep 17 00:00:00 2001
+From: Uzair Akbar <uzairakbar025@gmail.com>
+Date: Sat, 4 Jul 2026 17:11:31 -0400
+Subject: [PATCH 20/20] chore(service): drop fork CI workflow + default
+ OUT_IMAGE to deepracer-test:v0
+
+---
+ .github/workflows/build-and-push.yml | 84 ----------------------------
+ build-zmqsim.sh                      |  2 +-
+ 2 files changed, 1 insertion(+), 85 deletions(-)
+ delete mode 100644 .github/workflows/build-and-push.yml
+
+diff --git a/.github/workflows/build-and-push.yml b/.github/workflows/build-and-push.yml
+deleted file mode 100644
+index 65cb2ab..0000000
+--- a/.github/workflows/build-and-push.yml
++++ /dev/null
+@@ -1,84 +0,0 @@
+-name: build-and-push deepracer ZMQ sim image
+-
+-# Builds the pure-simulation image (docker/Dockerfile.zmqsim) for amd64 and arm64
+-# on native runners (no emulation), pushes per-arch tags, then stitches a
+-# multi-arch manifest so `docker pull <image>:<tag>` auto-selects the host arch.
+-#
+-# Required repo secrets:
+-#   DOCKERHUB_USERNAME  - Docker Hub user
+-#   DOCKERHUB_TOKEN     - Docker Hub access token (write scope)
+-#
+-# Note: ubuntu-24.04-arm is a free native arm64 runner for PUBLIC repos. For a
+-# private repo without arm runners, drop the arm64 matrix entry (amd64-only) or
+-# build arm64 via emulation on ubuntu-24.04 (slower).
+-
+-on:
+-  workflow_dispatch:
+-    inputs:
+-      image:
+-        description: "Image repository (no tag)"
+-        default: uzairakbar/deepracer-test
+-      tag:
+-        description: "Image tag"
+-        default: v0
+-
+-env:
+-  IMAGE: ${{ github.event.inputs.image || 'uzairakbar/deepracer-test' }}
+-  TAG: ${{ github.event.inputs.tag || 'v0' }}
+-
+-jobs:
+-  build:
+-    name: build ${{ matrix.arch }}
+-    strategy:
+-      fail-fast: false
+-      matrix:
+-        include:
+-          - arch: amd64
+-            runner: ubuntu-24.04
+-          - arch: arm64
+-            runner: ubuntu-24.04-arm
+-    runs-on: ${{ matrix.runner }}
+-    timeout-minutes: 180
+-    steps:
+-      - uses: actions/checkout@v4
+-
+-      - name: Free disk space
+-        uses: jlumbroso/free-disk-space@main
+-        with:
+-          tool-cache: true
+-          android: true
+-          dotnet: true
+-          haskell: true
+-          large-packages: true
+-          swap-storage: false
+-
+-      - name: Log in to Docker Hub
+-        uses: docker/login-action@v3
+-        with:
+-          username: ${{ secrets.DOCKERHUB_USERNAME }}
+-          password: ${{ secrets.DOCKERHUB_TOKEN }}
+-
+-      - name: Build and push per-arch image
+-        env:
+-          ARCH: ${{ matrix.arch }}
+-          OUT_IMAGE: ${{ env.IMAGE }}:${{ env.TAG }}-${{ matrix.arch }}
+-          PUSH: "1"
+-        run: ./build-zmqsim.sh
+-
+-  manifest:
+-    name: multi-arch manifest
+-    needs: build
+-    runs-on: ubuntu-24.04
+-    steps:
+-      - name: Log in to Docker Hub
+-        uses: docker/login-action@v3
+-        with:
+-          username: ${{ secrets.DOCKERHUB_USERNAME }}
+-          password: ${{ secrets.DOCKERHUB_TOKEN }}
+-
+-      - name: Create and push manifest
+-        run: |
+-          docker buildx imagetools create -t "${IMAGE}:${TAG}" \
+-            "${IMAGE}:${TAG}-amd64" \
+-            "${IMAGE}:${TAG}-arm64"
+-          docker buildx imagetools inspect "${IMAGE}:${TAG}"
+diff --git a/build-zmqsim.sh b/build-zmqsim.sh
+index ed350c8..9e1c2ba 100755
+--- a/build-zmqsim.sh
++++ b/build-zmqsim.sh
+@@ -16,7 +16,7 @@ VERSION="$(jq -r '.simapp' VERSION)"
+ # Output image is overridable so CI can tag per-architecture (e.g.
+ # uzairakbar/deepracer-test:v0-amd64). Set PUSH=1 to push it after building.
+ # Note: Docker repository names must be lowercase.
+-OUT_IMAGE="${OUT_IMAGE:-uzairakbar/deepracer:v1}"
++OUT_IMAGE="${OUT_IMAGE:-uzairakbar/deepracer-test:v0}"
+ PUSH="${PUSH:-0}"
+ 
+ # Default to the host architecture (native build, no emulation). Override with
+-- 
+2.47.3
+

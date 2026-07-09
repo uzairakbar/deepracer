@@ -1,0 +1,48 @@
+From ef396f91007046530b908cef478faf06bcdc4c26 Mon Sep 17 00:00:00 2001
+From: Uzair Akbar <uzairakbar025@gmail.com>
+Date: Thu, 2 Jul 2026 21:20:19 -0400
+Subject: [PATCH 17/20] fix(launch): shut down rollout launch when agent
+ process exits
+
+markov's log_and_exit terminates only the agent process; without an
+on_exit handler the launch (and gazebo) kept running, leaving the
+container alive with a dead/never-bound ZMQ gym server and the client
+blocking silently on recv(). Shutdown propagates the death upward:
+download_params_and_roslaunch_agent.py already polls the inner launch,
+so the whole chain, and eventually the container, exits.
+
+Co-Authored-By: Claude Fable 5 <noreply@anthropic.com>
+---
+ .../launch/rollout_rl_agent.launch.py                    | 9 +++++++--
+ 1 file changed, 7 insertions(+), 2 deletions(-)
+
+diff --git a/bundle/src/deepracer_simulation_environment/launch/rollout_rl_agent.launch.py b/bundle/src/deepracer_simulation_environment/launch/rollout_rl_agent.launch.py
+index f77b446..12a25a4 100644
+--- a/bundle/src/deepracer_simulation_environment/launch/rollout_rl_agent.launch.py
++++ b/bundle/src/deepracer_simulation_environment/launch/rollout_rl_agent.launch.py
+@@ -4,7 +4,7 @@
+ 
+ import os
+ from launch import LaunchDescription
+-from launch.actions import DeclareLaunchArgument, IncludeLaunchDescription, ExecuteProcess
++from launch.actions import DeclareLaunchArgument, IncludeLaunchDescription, ExecuteProcess, Shutdown
+ from launch.conditions import IfCondition
+ from launch.launch_description_sources import PythonLaunchDescriptionSource
+ from launch.substitutions import LaunchConfiguration, PathJoinSubstitution, EnvironmentVariable, PythonExpression
+@@ -79,7 +79,12 @@ def generate_launch_description():
+                 EnvironmentVariable('ROLLOUT_IDX', default_value='0')
+             ],
+             name='agent',
+-            output='screen'
++            output='screen',
++            # Uzair: propagate agent death — markov's log_and_exit kills only
++            # this process; without Shutdown the launch (gazebo included) and
++            # the container linger with a dead ZMQ gym server and the client
++            # blocks silently on recv().
++            on_exit=Shutdown(reason='rollout agent process exited')
+         ),
+         
+     ])
+-- 
+2.47.3
+
