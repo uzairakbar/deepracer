@@ -76,9 +76,7 @@ if [[ "$(hostname)" == *"pace.gatech.edu"* ]]; then
     export UV_PROJECT_ENVIRONMENT="$HOME/scratch/uv_envs/deepracer"
     mkdir -p "$HOME/scratch/uv_envs"
     # create a local shortcut
-    if [ ! -e .venv ]; then
-        ln -s $UV_PROJECT_ENVIRONMENT .venv
-    fi
+    [ -e .venv ] || ln -s "$UV_PROJECT_ENVIRONMENT" .venv
 fi
 uv venv
 uv pip install .
@@ -99,22 +97,32 @@ We recommend students to setup the project locally. However, in cases where that
 ### Environment setup
 Please note that PACE ICE machines already come with rootless **Podman**, **Apptainer**, and UV installed (use `module load uv`). As such, you do not need Docker: the container runtime is auto-detected (Podman is preferred, with Apptainer as a fallback), so you can follow the instructions from the [python environment section](#Python-environment) exactly as written.
 
-**Note:** PACE sessions may assign you a different CUDA version (12 vs. 13) than your previous session. If PyTorch throws a CUDA version error, you can simply do a hot-swap:
+**Important; fix up torch for your session's GPU.** PACE sessions may assign you a different CUDA version (12 vs. 13) than your previous installs. If PyTorch throws a CUDA version error, you can simply do a hot-swap:
 ```bash
 module load uv
 export UV_CACHE_DIR="$HOME/scratch/.cache/uv"
-uv pip install . --upgrade-package torch
+export UV_PROJECT_ENVIRONMENT="$HOME/scratch/uv_envs/deepracer"
 
-# For CPU-only PyTorch instead:
-# uv pip install . --upgrade-package torch \
-#     --extra-index-url https://download.pytorch.org/whl/cpu
+# check the required drivers
+cc=$(nvidia-smi --query-gpu=compute_cap --format=csv,noheader 2>/dev/null | head -1 | tr -d ' .')
+if   [ -z "$cc" ];     then BACKEND=cpu     # no GPU on this node
+elif [ "$cc" -lt 75 ]; then BACKEND=cu126   # Pascal/Volta (sm_60/sm_70, e.g. P100/V100)
+else                        BACKEND=auto    # Turing .. Blackwell and newer
+fi
+echo "GPU compute capability '$cc' -> reinstalling torch ($BACKEND)"
+
+uv pip install . --reinstall-package torch --torch-backend="$BACKEND"
 ```
 If this doesn't fix things, then do a full clean slate and [re-build the python environment](#Python-environment):
 ```bash
+module load uv
 SCRATCH_DIR="$HOME"/scratch
-rm -rf .venv                            # remove local venv symlink
-rm -rf "$SCRATCH_DIR/uv_envs/deepracer" # remove the actual venv dir
-rm -rf "$SCRATCH_DIR/.cache/uv"         # clear the uv cache
-rm -f uv.lock                           # delete lockfile for fresh re-builds
+export UV_CACHE_DIR="$SCRATCH_DIR/.cache/uv"
+export UV_PROJECT_ENVIRONMENT="$SCRATCH_DIR/uv_envs/deepracer"
+uv cache clean
+rm -rf .venv                     # remove local venv symlink
+rm -rf "$UV_PROJECT_ENVIRONMENT" # remove the actual venv dir
+rm -rf "$UV_CACHE_DIR"           # clear the uv cache
+rm -f uv.lock                    # rm lockfile to rebuild fresh
 # Then follow the standard Python environment setup steps again
 ```
