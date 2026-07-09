@@ -1,0 +1,49 @@
+From 4e0a003aae5c73e6f45c2d7000d760e732fb366c Mon Sep 17 00:00:00 2001
+From: Uzair Akbar <uzairakbar025@gmail.com>
+Date: Wed, 1 Jul 2026 15:59:05 -0400
+Subject: [PATCH 14/20] Keep images low resolution
+
+---
+ bundle/urdf/deepracer/racecar.gazebo | 12 ++++++------
+ 1 file changed, 6 insertions(+), 6 deletions(-)
+
+diff --git a/bundle/urdf/deepracer/racecar.gazebo b/bundle/urdf/deepracer/racecar.gazebo
+index d581730..dbab64a 100644
+--- a/bundle/urdf/deepracer/racecar.gazebo
++++ b/bundle/urdf/deepracer/racecar.gazebo
+@@ -66,8 +66,8 @@
+         <camera_info_topic>/$(arg racecar_name)/camera/zed/camera_info</camera_info_topic>
+         <horizontal_fov>1.13</horizontal_fov>
+         <image>
+-          <width>640</width>
+-          <height>480</height>
++          <width>160</width>
++          <height>120</height>
+           <format>R8G8B8</format>
+         </image>
+         <clip>
+@@ -92,8 +92,8 @@
+         <camera_info_topic>/$(arg racecar_name)/camera/zed/camera_info</camera_info_topic>
+         <horizontal_fov>1.13</horizontal_fov>
+         <image>
+-          <width>640</width>
+-          <height>480</height>
++          <width>160</width>
++          <height>120</height>
+           <format>R8G8B8</format>
+         </image>
+         <clip>
+@@ -116,8 +116,8 @@
+         <camera_info_topic>/$(arg racecar_name)/camera/zed_right/camera_info</camera_info_topic>
+         <horizontal_fov>1.13</horizontal_fov>
+         <image>
+-          <width>640</width>
+-          <height>480</height>
++          <width>160</width>
++          <height>120</height>
+           <format>R8G8B8</format>
+         </image>
+         <clip>
+-- 
+2.47.3
+

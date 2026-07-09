@@ -1,4 +1,4 @@
-import yaml
+import os
 import time
 import torch
 import datetime
@@ -12,11 +12,23 @@ from src.utils import (
     device,
     set_seed,
     make_environment,
+    RUNS_DIR,
+    MODELS_DIR,
 )
 
 
 DEVICE = device()
-HYPER_PARAMS_PATH: str='configs/hyper_params.yaml'
+# Default training hyper-parameters (these are just dummy example values).
+# Override any of them by passing a dict to run(), e.g. run({'total_timesteps': 4096}).
+DEFAULT_HYPER_PARAMS: dict = {
+    'seed':             42,
+    'cpu_only':         False,
+    'environment':      'deepracer-v0',
+    'experiment_name':  'time_trial',
+    'learning_rate':    2e-2,
+    'total_timesteps':  1024,
+    'gamma':            0.99,
+}
 
 
 def tensor(x: np.array, type=torch.float, device=DEVICE) -> torch.Tensor:
@@ -27,22 +39,20 @@ def zeros(x: tuple, type=torch.float, device=DEVICE) -> torch.Tensor:
     return torch.zeros(x, dtype=type, device=device)
 
 
-def run(hparams):
+def run(hparams: dict | None=None, agent_config: dict | None=None, track_config: dict | None=None):
     start_time = time.time()
-    
-    # load hyper-params if not provided
-    with open(HYPER_PARAMS_PATH, 'r') as file:
-        default_hparams = yaml.safe_load(file)
-    
-    final_hparams = default_hparams.copy()
-    final_hparams.update(hparams)
+
+    # start from the defaults, override with anything passed in
+    final_hparams = dict(DEFAULT_HYPER_PARAMS)
+    if hparams:
+        final_hparams.update(hparams)
     args = munchify(final_hparams)
     
     # save parameters and/or configs if you wish
     run_name = (
         f"{args.environment}__{args.experiment_name}__{args.seed}__{int(time.time())}"
     )
-    writer = SummaryWriter(f"runs/{run_name}")
+    writer = SummaryWriter(f"{RUNS_DIR}/{run_name}")
     writer.add_text(
         'hyperparameters',
         "|param|value|\n|-|-|\n%s" % (
@@ -54,7 +64,9 @@ def run(hparams):
     
     set_seed(args.seed)
 
-    env = make_environment(args.environment)
+    env = make_environment(
+        args.environment, agent_config=agent_config, track_config=track_config
+    )
     agent = RandomAgent(environment=env)
 
     # start rolling
@@ -93,8 +105,9 @@ def run(hparams):
             break
     
     # save your agent/model often
+    os.makedirs(MODELS_DIR, exist_ok=True)
     torch.save(
-        agent, f'{agent.name}.torch'
+        agent, os.path.join(MODELS_DIR, f'{agent.name}.torch')
     )
     logger.info(
         f'Model {agent.name} saved.'

@@ -1,0 +1,33 @@
+From 4ef79efac844698ddda2249d0ed8a49086b3a9f0 Mon Sep 17 00:00:00 2001
+From: Uzair Akbar <uzairakbar025@gmail.com>
+Date: Wed, 1 Jul 2026 05:03:21 -0400
+Subject: [PATCH 07/20] Assign unique ports to Gazebo
+
+---
+ docker/files/ml-code/entrypoint.sh | 10 ++++++++++
+ 1 file changed, 10 insertions(+)
+
+diff --git a/docker/files/ml-code/entrypoint.sh b/docker/files/ml-code/entrypoint.sh
+index 15d7441..0e7c8ca 100755
+--- a/docker/files/ml-code/entrypoint.sh
++++ b/docker/files/ml-code/entrypoint.sh
+@@ -52,6 +52,16 @@ export ROS_DOMAIN_ID=$(ros_domain_from_user "${USER:-deepracer}")
+ export ROS_AUTOMATIC_DISCOVERY_RANGE=LOCALHOST
+ echo "ROS_DOMAIN_ID: ${ROS_DOMAIN_ID} (discovery range: ${ROS_AUTOMATIC_DISCOVERY_RANGE})"
+ 
++# Per-user Gazebo (gz-transport) isolation -- the Harmonic analogue of the DDS
++# domain above. On a shared host network (Apptainer) two users' gz-sim instances
++# discover each other unless partitioned; namespace by user and advertise only on
++# loopback. Container-internal, so it is a harmless default under Docker and the
++# real isolation under Apptainer (mirrors MinIO / ROS_DOMAIN_ID). $USER is the
++# host user under Apptainer and unset->'deepracer' under (network-isolated) Docker.
++export GZ_PARTITION="${USER:-deepracer}"
++export GZ_IP=127.0.0.1
++echo "GZ_PARTITION: ${GZ_PARTITION} (GZ_IP: ${GZ_IP})"
++
+ export PATH="/opt/ml/:$PATH"
+ export PYTHONPATH="/opt/ml/code"
+ 
+-- 
+2.47.3
+

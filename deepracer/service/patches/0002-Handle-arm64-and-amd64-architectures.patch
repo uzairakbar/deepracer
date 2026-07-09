@@ -1,0 +1,131 @@
+From a69dfabd9e05a9a44b87d8028637910bdb3b2c42 Mon Sep 17 00:00:00 2001
+From: Uzair Akbar <uzairakbar025@gmail.com>
+Date: Tue, 30 Jun 2026 03:49:53 -0400
+Subject: [PATCH 02/20] Handle arm64 and amd64 architectures
+
+---
+ .github/workflows/build-and-push.yml | 84 ++++++++++++++++++++++++++++
+ build-zmqsim.sh                      | 11 +++-
+ 2 files changed, 94 insertions(+), 1 deletion(-)
+ create mode 100644 .github/workflows/build-and-push.yml
+
+diff --git a/.github/workflows/build-and-push.yml b/.github/workflows/build-and-push.yml
+new file mode 100644
+index 0000000..65cb2ab
+--- /dev/null
++++ b/.github/workflows/build-and-push.yml
+@@ -0,0 +1,84 @@
++name: build-and-push deepracer ZMQ sim image
++
++# Builds the pure-simulation image (docker/Dockerfile.zmqsim) for amd64 and arm64
++# on native runners (no emulation), pushes per-arch tags, then stitches a
++# multi-arch manifest so `docker pull <image>:<tag>` auto-selects the host arch.
++#
++# Required repo secrets:
++#   DOCKERHUB_USERNAME  - Docker Hub user
++#   DOCKERHUB_TOKEN     - Docker Hub access token (write scope)
++#
++# Note: ubuntu-24.04-arm is a free native arm64 runner for PUBLIC repos. For a
++# private repo without arm runners, drop the arm64 matrix entry (amd64-only) or
++# build arm64 via emulation on ubuntu-24.04 (slower).
++
++on:
++  workflow_dispatch:
++    inputs:
++      image:
++        description: "Image repository (no tag)"
++        default: uzairakbar/deepracer-test
++      tag:
++        description: "Image tag"
++        default: v0
++
++env:
++  IMAGE: ${{ github.event.inputs.image || 'uzairakbar/deepracer-test' }}
++  TAG: ${{ github.event.inputs.tag || 'v0' }}
++
++jobs:
++  build:
++    name: build ${{ matrix.arch }}
++    strategy:
++      fail-fast: false
++      matrix:
++        include:
++          - arch: amd64
++            runner: ubuntu-24.04
++          - arch: arm64
++            runner: ubuntu-24.04-arm
++    runs-on: ${{ matrix.runner }}
++    timeout-minutes: 180
++    steps:
++      - uses: actions/checkout@v4
++
++      - name: Free disk space
++        uses: jlumbroso/free-disk-space@main
++        with:
++          tool-cache: true
++          android: true
++          dotnet: true
++          haskell: true
++          large-packages: true
++          swap-storage: false
++
++      - name: Log in to Docker Hub
++        uses: docker/login-action@v3
++        with:
++          username: ${{ secrets.DOCKERHUB_USERNAME }}
++          password: ${{ secrets.DOCKERHUB_TOKEN }}
++
++      - name: Build and push per-arch image
++        env:
++          ARCH: ${{ matrix.arch }}
++          OUT_IMAGE: ${{ env.IMAGE }}:${{ env.TAG }}-${{ matrix.arch }}
++          PUSH: "1"
++        run: ./build-zmqsim.sh
++
++  manifest:
++    name: multi-arch manifest
++    needs: build
++    runs-on: ubuntu-24.04
++    steps:
++      - name: Log in to Docker Hub
++        uses: docker/login-action@v3
++        with:
++          username: ${{ secrets.DOCKERHUB_USERNAME }}
++          password: ${{ secrets.DOCKERHUB_TOKEN }}
++
++      - name: Create and push manifest
++        run: |
++          docker buildx imagetools create -t "${IMAGE}:${TAG}" \
++            "${IMAGE}:${TAG}-amd64" \
++            "${IMAGE}:${TAG}-arm64"
++          docker buildx imagetools inspect "${IMAGE}:${TAG}"
+diff --git a/build-zmqsim.sh b/build-zmqsim.sh
+index 45851da..ed350c8 100755
+--- a/build-zmqsim.sh
++++ b/build-zmqsim.sh
+@@ -13,7 +13,11 @@ cd "$(dirname "$0")"
+ 
+ PREFIX="awsdeepracercommunity"
+ VERSION="$(jq -r '.simapp' VERSION)"
+-OUT_IMAGE="uzairakbar/deepracer:v1"
++# Output image is overridable so CI can tag per-architecture (e.g.
++# uzairakbar/deepracer-test:v0-amd64). Set PUSH=1 to push it after building.
++# Note: Docker repository names must be lowercase.
++OUT_IMAGE="${OUT_IMAGE:-uzairakbar/deepracer:v1}"
++PUSH="${PUSH:-0}"
+ 
+ # Default to the host architecture (native build, no emulation). Override with
+ # ARCH=amd64 to produce the P4-compatible image (slow under emulation on arm64).
+@@ -45,4 +49,9 @@ DOCKER_BUILDKIT=0 docker build . --platform "${PLATFORM}" \
+     --build-arg TARGETARCH="${TARGET_ARCH}" \
+     -t "${OUT_IMAGE}"
+ 
++if [ "${PUSH}" = "1" ]; then
++    echo "==> Pushing ${OUT_IMAGE}..."
++    docker push "${OUT_IMAGE}"
++fi
++
+ echo "==> Done: ${OUT_IMAGE}"
+-- 
+2.47.3
+

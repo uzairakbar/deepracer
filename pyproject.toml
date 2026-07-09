@@ -29,4 +29,4 @@ torch-backend = "auto"
 
 [tool.uv.sources]
 # install the local deepracer_gym package in editable mode
-deepracer_gym = { path = "packages/.", editable = true }
+deepracer_gym = { path = "deepracer/client/.", editable = true }

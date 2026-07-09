@@ -1,0 +1,43 @@
+From 93443ac69ab078923a7f9c066e5aeee6ce3a827d Mon Sep 17 00:00:00 2001
+From: Uzair Akbar <uzairakbar025@gmail.com>
+Date: Thu, 2 Jul 2026 21:20:48 -0400
+Subject: [PATCH 18/20] fix(entrypoint): exit non-zero with FATAL log when
+ simulation launch exits
+
+Previously exec'd ros2 launch never reported failure: if the launch
+died the container exited silently (or lingered), and the gym client
+hung on recv() with no visible cause. Run the launch in the background
+with a TERM/INT trap (docker stop still prompt) and always exit 1 with
+a grep-able FATAL line when it returns.
+
+Co-Authored-By: Claude Fable 5 <noreply@anthropic.com>
+---
+ docker/files/ml-code/entrypoint.sh | 15 ++++++++++++++-
+ 1 file changed, 14 insertions(+), 1 deletion(-)
+
+diff --git a/docker/files/ml-code/entrypoint.sh b/docker/files/ml-code/entrypoint.sh
+index ca02aee..ef462f9 100755
+--- a/docker/files/ml-code/entrypoint.sh
++++ b/docker/files/ml-code/entrypoint.sh
+@@ -237,4 +237,17 @@ Xvfb "${DISPLAY}" -ac -screen 0 1400x900x24 > /opt/ml/xvfb.log 2>&1 &
+ sleep 2
+ 
+ echo "Launching simulation: ros2 launch deepracer_simulation_environment ${SIMULATION_LAUNCH_FILE}"
+-exec ros2 launch deepracer_simulation_environment "${SIMULATION_LAUNCH_FILE}"
++# Uzair: fail loudly — this launch must never exit in normal operation. Run it
++# in the background with a signal trap (instead of exec) so that docker stop
++# still terminates promptly AND any launch death yields a non-zero container
++# exit with a grep-able FATAL line, instead of a zombie container whose ZMQ gym
++# client hangs silently. Note: ros2 launch often returns 0 even after an
++# abnormal Shutdown action, so exit 1 unconditionally.
++set +e
++ros2 launch deepracer_simulation_environment "${SIMULATION_LAUNCH_FILE}" &
++LAUNCH_PID=$!
++trap 'kill -TERM ${LAUNCH_PID} 2>/dev/null' TERM INT
++wait ${LAUNCH_PID}
++rc=$?
++echo "FATAL: simulation launch exited (rc=${rc}); terminating container." >&2
++exit 1
+-- 
+2.47.3
+

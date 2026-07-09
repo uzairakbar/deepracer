@@ -7,20 +7,14 @@ If using Windows, please install [WSL2 and Ubuntu](https://documentation.ubuntu.
 
 Also install either the [WSL extension](https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.remote-wsl) or [Remote Development extension](https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.vscode-remote-extensionpack) for VSCode to develop in WSL.
 
-### Colima + Rosetta (only for Mac w/ Apple Silicon)
-
-```bash
-brew install colima
-softwareupdate --install-rosetta --agree-to-license
-```
-
 ### Docker
 #### Windows
 Install the [Docker Desktop for Windows](https://docs.docker.com/desktop/setup/install/windows-install/) and [configure it for WSL](https://docs.docker.com/desktop/features/wsl/).
 
 #### Mac
 ```bash
-brew install docker
+brew install docker --cask
+open -a Docker
 ```
 
 #### Linux (Ubuntu)
@@ -63,14 +57,16 @@ newgrp docker
 docker run hello-world
 ```
 
-### UV
-For Mac/ Linux/ Windows (under WSL Ubuntu):
+### uv
+Install `uv` and make sure it is in `PATH` (change `.profile` to `.bashrc` or `.zshrc` if needed):
 ```bash
 curl -LsSf https://astral.sh/uv/install.sh | sh
+# put uv in PATH 
+echo 'export PATH="$HOME/.local/bin:$PATH"' >> ~/.profile
 ```
 
 ## Python environment
-Make a virtual environment with dependencies installed:
+Make a virtual environment `.venv` with dependencies installed:
 ```bash
 if [[ "$(hostname)" == *"pace.gatech.edu"* ]]; then
     # load uv
@@ -87,7 +83,7 @@ fi
 uv venv
 uv pip install .
 ```
-To run your scripts using the virtual environment, use:
+To run your scripts using `.venv`, use:
 ```bash
 uv run python src/run.py
 ```
@@ -101,7 +97,7 @@ We recommend students to setup the project locally. However, in cases where that
 * Click on 'My Interactive Sessions' and select whichever one you prefer on the 'Interactive Apps' menu (we recommend Coder or VS Code).
 
 ### Environment setup
-Please note that PACE ICE machines already come with Apptainer and UV installed (use `module load uv`). As such, you do not need Docker, and can follow the instructions from the [python environment section](#Python-environment) exactly as written.
+Please note that PACE ICE machines already come with rootless **Podman**, **Apptainer**, and UV installed (use `module load uv`). As such, you do not need Docker: the container runtime is auto-detected (Podman is preferred, with Apptainer as a fallback), so you can follow the instructions from the [python environment section](#Python-environment) exactly as written.
 
 **Note:** PACE sessions may assign you a different CUDA version (12 vs. 13) than your previous session. If PyTorch throws a CUDA version error, you can simply do a hot-swap:
 ```bash

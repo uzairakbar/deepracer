@@ -1,5 +1,6 @@
 # Custom files and folders
 /logs
+/artifacts
 *.sif
 
 # Byte-compiled / optimized / DLL files

@@ -1,0 +1,32 @@
+From 0a76cb74a23a23710716390d9be4c29c2bda3415 Mon Sep 17 00:00:00 2001
+From: Uzair Akbar <uzairakbar025@gmail.com>
+Date: Wed, 1 Jul 2026 15:59:28 -0400
+Subject: [PATCH 15/20] remove the cap on CPUs
+
+---
+ .../launch/empty_world.launch.py                         | 9 +++++----
+ 1 file changed, 5 insertions(+), 4 deletions(-)
+
+diff --git a/bundle/src/deepracer_simulation_environment/launch/empty_world.launch.py b/bundle/src/deepracer_simulation_environment/launch/empty_world.launch.py
+index 8fb3f4a..2e99964 100644
+--- a/bundle/src/deepracer_simulation_environment/launch/empty_world.launch.py
++++ b/bundle/src/deepracer_simulation_environment/launch/empty_world.launch.py
+@@ -78,10 +78,11 @@ def generate_launch_description():
+     # Gazebo server (gz sim) 
+     gazebo_server = ExecuteProcess(
+         cmd=[
+-            'taskset', '-c', PythonExpression([
+-                'str(2 * int(', LaunchConfiguration('rollout_idx'), ')) + "," + ',
+-                'str(2 * int(', LaunchConfiguration('rollout_idx'), ') + 1)'
+-            ]),
++            # NOTE: upstream pins gz to 2 cores via `taskset -c 2*idx,2*idx+1` to
++            # isolate parallel rollout workers. This image is always single-worker
++            # (the ZMQ gym service), so that pin just starves the sim of the other
++            # cores; and on a cgroup-cpuset host (Apptainer --cpus) those fixed core
++            # ids can fall outside the allocation. Let gz use all allocated cores.
+             'gz', 'sim',
+             world_file_path,
+             # Server mode
+-- 
+2.47.3
+

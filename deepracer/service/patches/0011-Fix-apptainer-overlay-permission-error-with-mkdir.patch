@@ -1,0 +1,54 @@
+From 78283769fecbbb733f52671e8484fd3b9548a405 Mon Sep 17 00:00:00 2001
+From: Uzair Akbar <uzairakbar025@gmail.com>
+Date: Wed, 1 Jul 2026 12:07:36 -0400
+Subject: [PATCH 11/20] Fix apptainer overlay permission error with mkdir
+
+---
+ docker/Dockerfile.zmqsim           | 7 ++++++-
+ docker/files/ml-code/entrypoint.sh | 9 +++++++--
+ 2 files changed, 13 insertions(+), 3 deletions(-)
+
+diff --git a/docker/Dockerfile.zmqsim b/docker/Dockerfile.zmqsim
+index 3616fba..896b444 100644
+--- a/docker/Dockerfile.zmqsim
++++ b/docker/Dockerfile.zmqsim
+@@ -29,10 +29,15 @@ RUN curl -fsSL "https://github.com/mikefarah/yq/releases/latest/download/yq_linu
+ RUN /root/anaconda/envs/sagemaker_env/bin/pip install --no-cache-dir \
+         pyzmq msgpack msgpack_numpy
+ 
+-# Sim-only entrypoint + standard mount points
++# Sim-only entrypoint + standard mount points.
++# Bake the local-FS "S3" bucket tree into the image: Apptainer's fuse-overlayfs
++# rejects creating new nested dirs at the container root at runtime, but writing
++# files into a pre-existing dir via the overlay works. Keep this path in sync
++# with S3_BUCKET/S3_PREFIX in entrypoint.sh (bucket / sagemaker-rlexp-deepracer-prefix).
+ COPY docker/files/ml-code/entrypoint.sh /opt/ml/code/entrypoint.sh
+ RUN chmod +x /opt/ml/code/entrypoint.sh && \
+     mkdir -p /configs && \
++    mkdir -p /bucket/sagemaker-rlexp-deepracer-prefix/model && \
+     mkdir -p /tmp/.X11-unix && chmod 1777 /tmp/.X11-unix
+ 
+ WORKDIR /opt/ml/code
+diff --git a/docker/files/ml-code/entrypoint.sh b/docker/files/ml-code/entrypoint.sh
+index 22aaf8c..f9b035a 100755
+--- a/docker/files/ml-code/entrypoint.sh
++++ b/docker/files/ml-code/entrypoint.sh
+@@ -112,8 +112,13 @@ S3_ROOT="/${S3_BUCKET}"
+ REWARD_FUNCTION_S3_KEY=${S3_PREFIX}/custom_reward_function.py
+ MODEL_METADATA_S3_KEY=${S3_PREFIX}/model/model_metadata.json
+ 
+-# Stage config files where the FS shim expects them: /<bucket>/<key>.
+-mkdir -p "${S3_ROOT}/${S3_PREFIX}/model"
++# Stage config files where the FS shim expects them: /<bucket>/<key>. The dir
++# tree is BAKED into the image (Dockerfile.zmqsim) because creating new nested
++# directories at the container root fails under Apptainer's fuse-overlayfs
++# ("Operation not permitted"); writing files into a pre-existing dir via the
++# overlay works fine (same trick the legacy v0 image used). So this is a
++# no-op when the baked tree is present, and must never be fatal.
++mkdir -p "${S3_ROOT}/${S3_PREFIX}/model" 2>/dev/null || true
+ 
+ # model_metadata == agent_params.json (action space / sensors / network)
+ cp /configs/agent_params.json "${S3_ROOT}/${MODEL_METADATA_S3_KEY}"
+-- 
+2.47.3
+
