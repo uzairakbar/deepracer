@@ -24,7 +24,7 @@ Requirements:
 From the `client/` directory:
 
 ```bash
-pip install -e .
+pip install .
 ```
 
 On first use, the simulator image is downloaded automatically. It is several GBs,
