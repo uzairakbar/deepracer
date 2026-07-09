@@ -56,11 +56,11 @@ env.close()                         # stops + remove the simulator service
 ```python
 env = gym.make(
     'deepracer-v0',
-    agent_config=agent_config,          # action space + sensors
-    track_config=track_config,          # track, bots, obstacles
+    agent_config: dict=agent_config,    # action space + sensors
+    track_config: dict=track_config,    # track, bots, obstacles
     reward_function=reward_function,    # custom reward function
-    cpus=3, memory='6g',                # allocate sim resources
-    cache=True,                         # keep sim warm on close
+    cpus: int=3,   memory: str='6g',    # allocate sim resources
+    cache: bool=True,                   # keep sim warm on close
 )
 ```
 Most students will only need `reward_function`, `agent_config`, and `track_config`, each of which is describe below.
