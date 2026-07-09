@@ -11,7 +11,7 @@ Also install either the [WSL extension](https://marketplace.visualstudio.com/ite
 #### Windows
 Install the [Docker Desktop for Windows](https://docs.docker.com/desktop/setup/install/windows-install/) and [configure it for WSL](https://docs.docker.com/desktop/features/wsl/).
 
-#### Mac
+#### MacOS
 ```bash
 brew install docker --cask
 open -a Docker
