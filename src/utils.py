@@ -399,16 +399,17 @@ def evaluate(
         track_config: dict | None=None,
         directory: str=EVAL_DIR
     ):
-    '''Evaluate an agent across all three PROJECT_TRACKS (the reported set) using
-    the obstacle/bot counts from track_config. WORLD_NAME in track_config is
-    ignored (we run all three tracks); None -> packaged default counts.'''
+    '''Evaluate an agent across all three PROJECT_TRACKS.'''
+    requested_world = (
+        track_config.get('WORLD_NAME') if isinstance(track_config, dict) else None
+    )
     agent_config = resolve_agent_config(agent_config)
     track_config = resolve_track_config(track_config)
     race_type = get_race_type(track_config)
-    if 'WORLD_NAME' in track_config:
+    if requested_world is not None:
         logger.info(
             'evaluate() runs all PROJECT_TRACKS; ignoring track_config '
-            f'WORLD_NAME ({track_config["WORLD_NAME"]!r}).'
+            f'WORLD_NAME ({requested_world!r}).'
         )
 
     agent.eval().to(torch.device('cpu'))
@@ -420,9 +421,13 @@ def evaluate(
         autorefresh=True, min_delta=0.5
     )
     eval_metrics = {}
-    for world_name in PROJECT_TRACKS:
+    for i, world_name in enumerate(PROJECT_TRACKS, start=1):
         status.update(track=world_name)
         status.refresh()
+        logger.info(
+            f'[{i}/{len(PROJECT_TRACKS)}] Starting {race_type} evaluation on '
+            f'{world_name} track ({EVAL_EPISODES} episodes).'
+        )
         eval_metrics[world_name] = _eval_one(
             agent, agent_config, {**track_config, 'WORLD_NAME': world_name}
         )
