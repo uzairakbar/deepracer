@@ -19,23 +19,22 @@ def default_track_config() -> dict:
 
 
 def resolve_agent_config(config: dict | None=None) -> dict:
-    '''An agent config is a plain dict (or None -> packaged default). File
-    handling is the caller's job, not ours.'''
+    '''shallow merge agent config with packaged defaults'''
     if config is None:
         return default_agent_config()
     if isinstance(config, dict):
-        return config
+        return {**default_agent_config(), **config}
     raise TypeError(
         f'agent_config must be a dict or None, got {type(config).__name__}.'
     )
 
 
 def resolve_track_config(config: dict | None=None) -> dict:
-    '''A track config is a plain dict (or None -> packaged default).'''
+    '''shallow merge track config with packaged defaults'''
     if config is None:
         return default_track_config()
     if isinstance(config, dict):
-        return config
+        return {**default_track_config(), **config}
     raise TypeError(
         f'track_config must be a dict or None, got {type(config).__name__}.'
     )
