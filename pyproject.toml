@@ -30,6 +30,10 @@ classifiers = [
 Homepage = "https://github.com/uzairakbar/deepracer"
 Repository = "https://github.com/uzairakbar/deepracer"
 
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-ra"
+
 # Distribution only includes the importable `deepracer` client/
 [tool.setuptools.packages.find]
 where = ["client"]
