@@ -16,7 +16,7 @@ Apptainer, then exposes it through the standard `gymnasium` API.
 
 Requirements:
 
-- Python 3.10+
+- Python 3.12+
 - Docker, Podman, or Apptainer
 - Suficient HW resources (Recommended ~3 CPUs, ~6GB RAM)
 

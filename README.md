@@ -9,7 +9,7 @@ simulator with Docker, Podman, or Apptainer, then exposes it through the standar
 ## Installation
 
 Requirements:
-- Python 3.10 or higher.
+- Python 3.12 or higher.
 - A container runtime: Docker, Podman, or Apptainer (e.g., for rootless runs on HPC).
 
 ```bash

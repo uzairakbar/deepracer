@@ -7,7 +7,7 @@ name = "deepracer"
 version = "0.0.0"
 description = "A Gymnasium environment for the AWS DeepRacer simulator"
 readme = "README.md"
-requires-python = ">=3.10"
+requires-python = ">=3.12"
 authors = [{ name = "Uzair Akbar", email = "uzairakbar025@gmail.com" }]
 dependencies = [
     "numpy",
@@ -22,6 +22,7 @@ dependencies = [
 ]
 classifiers = [
     "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.12",
     "License :: OSI Approved :: MIT License",
     "Operating System :: OS Independent",
 ]
@@ -44,7 +45,7 @@ testpaths = ["tests"]
 addopts = "-ra"
 
 [tool.ruff]
-target-version = "py310"
+target-version = "py312"
 line-length = 88
 extend-exclude = ["service"]
 
@@ -52,7 +53,7 @@ extend-exclude = ["service"]
 select = ["E", "F", "I", "UP", "B"]
 
 [tool.mypy]
-python_version = "3.10"
+python_version = "3.12"
 files = ["client/deepracer"]
 ignore_missing_imports = true
 
