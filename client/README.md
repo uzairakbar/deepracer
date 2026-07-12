@@ -213,7 +213,7 @@ deepracer.running()       # list managed simulators on this host
 deepracer.shutdown_all()  # stop simulators owned by this process
 ```
 
-If your notebook, script, or job is interrupted, a simulator can be left behind. 
+If your notebook, script, or job is interrupted, a simulator can be left behind.
 Use the cleanup command before starting another batch of environments:
 
 ```bash
