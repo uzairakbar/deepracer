@@ -1,24 +1,26 @@
-# Project 4; DeepRacer
+# DeepRacer
 
-![deepracer](https://github.gatech.edu/rldm/P4_deepracer/assets/78388/86684160-fe6f-4a03-972c-078cd9a9afde)
+A [Gymnasium](https://gymnasium.farama.org/) environment for the
+[AWS DeepRacer](https://github.com/aws-deepracer-community/deepracer-for-cloud)
+simulator. Each `deepracer-v0` environment automatically launches its own
+simulator with Docker, Podman, or Apptainer, then exposes it through the standard
+`gymnasium` API.
 
-## Clone this repository
+## Installation
+
+Requirements:
+- Python 3.10 or higher.
+- A container runtime: Docker, Podman, or Apptainer (e.g., for rootless runs on HPC).
+
 ```bash
-git clone https://github.gatech.edu/rldm/P4_deepracer.git
-cd P4_deepracer
+pip install deepracer
 ```
 
-## Setup and Install Dependencies
-This project requires the following to work.
-- A container runtime: Docker, Podman or Apptainer (rootless on HPC, e.g. PACE).
-- Python 3.10 or higher (we use [`uv`](https://astral.sh/uv) to manage the environment).
-
-Please see the detailed setup instructions in [`SETUP.md`](https://github.gatech.edu/rldm/P4_deepracer/blob/main/SETUP.md).
-
 ## Usage
+
 ```python
 import gymnasium as gym
-import deepracer_gym
+import deepracer  # registers the deepracer-v0 environment
 
 env = gym.make('deepracer-v0')
 
@@ -31,5 +33,4 @@ observation, reward, terminated, truncated, info = env.step(
 env.close()
 ```
 
-See the [`deepracer/client/`](deepracer/client/) directory and the
-[`usage.ipynb`](usage.ipynb) notebook for details.
+See the [`client/`](client/) directory for the full documentation.

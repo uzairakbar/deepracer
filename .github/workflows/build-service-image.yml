@@ -1,7 +1,7 @@
 name: build-and-push deepracer service image
 
-# Builds the pure-simulation image by applying deepracer/service/patches/ onto the
-# pinned upstream submodule (deepracer/service/upstream @ v6.0.5), for amd64 and
+# Builds the pure-simulation image by applying service/patches/ onto the
+# pinned upstream submodule (service/upstream @ v6.0.5), for amd64 and
 # arm64 on native runners (no emulation), pushes per-arch tags, then stitches a
 # multi-arch manifest so `docker pull <image>:<tag>` auto-selects the host arch.
 #
@@ -39,7 +39,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          submodules: recursive          # vendors deepracer/service/upstream @ the pin
+          submodules: recursive          # vendors service/upstream @ the pin
 
       - name: Free disk space
         uses: jlumbroso/free-disk-space@main
@@ -62,7 +62,7 @@ jobs:
           ARCH: ${{ matrix.arch }}
           OUT_IMAGE: ${{ env.IMAGE }}:${{ env.TAG }}-${{ matrix.arch }}
           PUSH: "1"
-        run: ./deepracer/service/scripts/build.sh
+        run: ./service/scripts/build.sh
 
   manifest:
     name: multi-arch manifest
