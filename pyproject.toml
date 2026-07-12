@@ -1,32 +1,44 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
 [project]
 name = "deepracer"
-version = "0.1.0"
-requires-python = ">=3.12,<3.13"
+version = "0.0.0"
+description = "A Gymnasium environment for the AWS DeepRacer simulator"
+readme = "README.md"
+requires-python = ">=3.10"
+authors = [{ name = "Uzair Akbar", email = "uzairakbar025@gmail.com" }]
 dependencies = [
-    "numpy==2.2.4",
-    "matplotlib==3.10.1",
-    "seaborn",
-    "torch",
-    "loguru==0.7.3",
-    "standard-imghdr==3.13.0",
-    "tensorboard>=2.4.1",
-    "munch==4.0.0",
-    "gymnasium==1.1.1",
-    "moviepy==2.1.2",
-    "pyzmq==26.3.0",
-    "msgpack==1.1.0",
-    "msgpack_numpy==0.4.8",
-    "enlighten==1.14.1",
-    "scikit-image==0.25.2",
-    "jupyter==1.1.1",
-    "jupyterlab==4.3.6",
-    "ipykernel",
-    "deepracer_gym"
+    "numpy",
+    "matplotlib",
+    "gymnasium",
+    "pyzmq",
+    "msgpack",
+    "msgpack_numpy",
+    "loguru",
+    "docker",   # Docker/Podman(-socket) backend
+    "pyyaml",   # packaged track_config parsing
+]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
 ]
 
-[tool.uv.pip]
-torch-backend = "auto"
+[project.urls]
+Homepage = "https://github.com/uzairakbar/deepracer"
+Repository = "https://github.com/uzairakbar/deepracer"
 
-[tool.uv.sources]
-# install the local deepracer_gym package in editable mode
-deepracer_gym = { path = "deepracer/client/.", editable = false }
+# Distribution only includes the importable `deepracer` client/
+[tool.setuptools.packages.find]
+where = ["client"]
+include = ["deepracer*"]
+
+[tool.setuptools.package-data]
+"deepracer.defaults" = [
+    "agent_params.json",
+    "environment_params.yaml",
+    "reward_function.py",
+    "tracks.txt",
+]
