@@ -26,6 +26,13 @@ classifiers = [
     "Operating System :: OS Independent",
 ]
 
+[project.optional-dependencies]
+dev = [
+    "ruff>=0.15",
+    "pytest>=8",
+    "pre-commit>=4",
+]
+
 [project.urls]
 Homepage = "https://github.com/uzairakbar/deepracer"
 Repository = "https://github.com/uzairakbar/deepracer"
@@ -33,6 +40,14 @@ Repository = "https://github.com/uzairakbar/deepracer"
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 addopts = "-ra"
+
+[tool.ruff]
+target-version = "py310"
+line-length = 88
+extend-exclude = ["service"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B"]
 
 # Distribution only includes the importable `deepracer` client/
 [tool.setuptools.packages.find]
