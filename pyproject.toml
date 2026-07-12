@@ -29,8 +29,10 @@ classifiers = [
 [project.optional-dependencies]
 dev = [
     "ruff>=0.15",
+    "mypy>=1.14",
     "pytest>=8",
     "pre-commit>=4",
+    "types-PyYAML",
 ]
 
 [project.urls]
@@ -48,6 +50,11 @@ extend-exclude = ["service"]
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "UP", "B"]
+
+[tool.mypy]
+python_version = "3.10"
+files = ["client/deepracer"]
+ignore_missing_imports = true
 
 # Distribution only includes the importable `deepracer` client/
 [tool.setuptools.packages.find]
