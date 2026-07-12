@@ -1,7 +1,6 @@
 import os
 import weakref
 from collections.abc import Callable
-from typing import TypeAlias
 
 import gymnasium as gym
 import matplotlib.pyplot as plt
@@ -26,7 +25,7 @@ from deepracer.service.spec import DEFAULT_IMAGE
 # (service.validate -> envs.utils -> envs.__init__ -> this module).
 
 
-ActionType: TypeAlias = int | np.ndarray | list[float]
+type ActionType = int | np.ndarray | list[float]
 HOST: str = "127.0.0.1"
 DEFAULT_PORT: int = 8888
 

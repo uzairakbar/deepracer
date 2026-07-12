@@ -1,5 +1,4 @@
 from collections.abc import Callable
-from typing import TypeAlias
 
 import numpy as np
 import zmq
@@ -11,7 +10,7 @@ PORT: int = 8888
 HOST: str = "127.0.0.1"
 TIMEOUT_LONG: int = 500_000  # ~8.3 m
 TIMEOUT_SHORT: int = 100_000  # ~1.7 m
-ActionType: TypeAlias = int | np.ndarray | list[float]
+type ActionType = int | np.ndarray | list[float]
 
 
 def DUMMY_ACTION_DISCRETE() -> int:
