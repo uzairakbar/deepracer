@@ -2,6 +2,7 @@ import json
 import socket
 import hashlib
 import getpass
+from collections.abc import Collection
 from dataclasses import dataclass
 
 
@@ -85,7 +86,7 @@ def port_is_free(port: int, host: str='127.0.0.1') -> bool:
 def free_env_id(
         user: str,
         max_envs: int,
-        taken: set[int]=frozenset(),
+        taken: Collection[int]=frozenset(),
     ) -> Identity:
     '''First env_id in [0, max_envs) whose port is free and not already owned.'''
     for env_id in range(max_envs):

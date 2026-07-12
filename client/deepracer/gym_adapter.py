@@ -1,3 +1,4 @@
+from collections.abc import Callable
 from typing import TypeAlias
 
 import numpy as np
@@ -23,6 +24,7 @@ def DUMMY_ACTION_CONTINUOUS() -> np.ndarray:
 
 class DeepracerGymAdapter:
     def __init__(self, action_space_type: str, host: str = HOST, port: int = PORT):
+        self.dummy_action: Callable[[], ActionType]
         if action_space_type == "discrete":
             self.dummy_action = DUMMY_ACTION_DISCRETE
         elif action_space_type == "continuous":
@@ -34,12 +36,12 @@ class DeepracerGymAdapter:
             )
         self.zmq_client = DeepracerClientZMQ(host=host, port=port)
         self.zmq_client.ready()
-        self.response = None
+        self.response: dict | None = None
         self.done = False
 
     def _send_action(self, action: ActionType):
-        action: dict[str, ActionType] = {"action": action}
-        self.response = self.zmq_client.send_message(action)
+        payload: dict[str, object] = {"action": action}
+        self.response = self.zmq_client.send_message(payload)
         self.done = self.response["_game_over"]
         return self.response
 
@@ -71,6 +73,8 @@ class DeepracerGymAdapter:
 
     def send_action(self, action: ActionType):
         if self.done:
+            # done is only set after a send, so a response is always present here
+            assert self.response is not None
             return self._parse_response(self.response)
         response = self._send_action(action)
         return self._parse_response(response)

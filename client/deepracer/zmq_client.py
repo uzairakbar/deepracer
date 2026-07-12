@@ -33,12 +33,12 @@ class DeepracerClientZMQ:
         message: dict[str, int] = {"ready": 1}
         self._send_message(message)
 
-    def recieve_response(self):
+    def recieve_response(self) -> dict:
         packed_response = self.socket.recv()
         response = msgpack.unpackb(packed_response)
         return response
 
-    def send_message(self, message: dict[str, object]):
+    def send_message(self, message: dict[str, object]) -> dict:
         self._send_message(message)
         response = self.recieve_response()
         return response

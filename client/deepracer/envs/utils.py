@@ -8,7 +8,7 @@ LIDAR_SHAPE: tuple[int, ...] = (64,)
 CAMERA_SHAPE: tuple[int, ...] = (120, 160)  # H x W
 STEREO_CAMERA_SHAPE: tuple[int, ...] = (2,) + CAMERA_SHAPE  # C x H x W
 FRONT_FACING_CAMERA_SHAPE: tuple[int, ...] = (3,) + CAMERA_SHAPE  # C x H x W
-SENSOR_SPACE: dict[str, spaces.Box] = {
+SENSOR_SPACE: dict[str, spaces.Box | None] = {
     "LIDAR": spaces.Box(
         # container emits float32; match it so gymnasium raises no dtype warning
         low=0.15,
@@ -132,7 +132,13 @@ def make_observation_space(config=None):
             f"Sensor {sensor} not supported!"
         )
 
-    return spaces.Dict({sensor: SENSOR_SPACE[sensor] for sensor in sensors}), sensors
+    return spaces.Dict(
+        {
+            sensor: space
+            for sensor in sensors
+            if (space := SENSOR_SPACE[sensor]) is not None
+        }
+    ), sensors
 
 
 def num_channels(measurement: np.ndarray):
