@@ -133,6 +133,12 @@ class SimulationManager:
         pool = self._idle.get(fp, [])
         while pool:
             handle = pool.pop()
+            # Resume the frozen container before probing it: a paused sim's ZMQ
+            # server cannot answer _zmq_reserves while its processes are stopped.
+            try:
+                self.backend.unpause(handle)
+            except Exception:
+                pass
             if self.backend.is_alive(handle) and _zmq_reserves(handle.port):
                 self._live[handle.name] = handle
                 logger.info(f'[warm] re-attached {handle.name} (fp {fp})')
@@ -223,7 +229,13 @@ class SimulationManager:
             self._live.pop(handle.name, None)
             if keep_warm and self.backend.is_alive(handle):
                 self._idle.setdefault(handle.fingerprint, []).append(handle)
-                logger.info(f'[warm] kept {handle.name} warm (fp {handle.fingerprint})')
+                # Freeze it while parked so it stops burning the CPU. Best-effort:
+                # a failed pause just degrades to the old always-running behavior.
+                try:
+                    self.backend.pause(handle)
+                except Exception:
+                    pass
+                logger.info(f'[warm] kept {handle.name} warm+paused (fp {handle.fingerprint})')
                 return
         try:
             self.backend.stop(handle)

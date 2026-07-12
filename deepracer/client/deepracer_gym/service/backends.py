@@ -68,6 +68,17 @@ class SimBackend(abc.ABC):
         leftovers from an ungracefully-killed session.'''
         return []
 
+    def pause(self, handle: SimHandle) -> None:
+        '''Freeze an idle warm container (SIGSTOP via the runtime) so it stops
+        burning CPU while parked in the idle pool. Best-effort; no-op for runtimes 
+        that cannot pause instances (e.g. Apptainer). Overridden by OCI backends.'''
+        return None
+
+    def unpause(self, handle: SimHandle) -> None:
+        '''Resume a paused warm container before it is re-attached for reuse.
+        Best-effort; the paired no-op default for non-pausing runtimes.'''
+        return None
+
 
 class DockerBackend(SimBackend):
     name = 'docker'
@@ -137,6 +148,10 @@ class DockerBackend(SimBackend):
         except Exception:
             return                       # already gone
         try:
+            container.unpause()          # thaw a paused (idle warm) container so
+        except Exception:                # stop/remove is not blocked by the freeze
+            pass
+        try:
             container.stop(timeout=10)
         except Exception:
             pass
@@ -145,11 +160,26 @@ class DockerBackend(SimBackend):
         except Exception:
             pass
 
+    def pause(self, handle: SimHandle) -> None:
+        try:
+            self._get(handle).pause()
+        except Exception:
+            pass
+
+    def unpause(self, handle: SimHandle) -> None:
+        try:
+            self._get(handle).unpause()
+        except Exception:
+            pass
+
     def is_alive(self, handle: SimHandle) -> bool:
         try:
             container = self._get(handle)
             container.reload()
-            return container.status == 'running'
+            # 'paused' counts as alive: an idle warm container we froze is still
+            # a reusable sim (unpaused before reuse). Podman's is_alive already
+            # treats it so (a paused container keeps State.Running=true).
+            return container.status in ('running', 'paused')
         except Exception:
             return False
 
@@ -276,7 +306,16 @@ class PodmanBackend(_CliBackend):
         )
 
     def stop(self, handle: SimHandle) -> None:
+        # Thaw first so `rm -f` is not blocked by a paused (idle warm) container;
+        # unpause of a non-paused container just errors harmlessly (ignored).
+        _run([self.binary, 'unpause', handle.name], self._exec)
         _run([self.binary, 'rm', '-f', handle.name], self._exec)
+
+    def pause(self, handle: SimHandle) -> None:
+        _run([self.binary, 'pause', handle.name], self._exec)
+
+    def unpause(self, handle: SimHandle) -> None:
+        _run([self.binary, 'unpause', handle.name], self._exec)
 
     def is_alive(self, handle: SimHandle) -> bool:
         result = _run(
