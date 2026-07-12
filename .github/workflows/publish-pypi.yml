@@ -1,17 +1,5 @@
 name: publish to PyPI
 
-# Build the `deepracer` distribution and publish it to PyPI whenever a GitHub
-# Release is published. Uses PyPI Trusted Publishing (OIDC) — no API token
-# secret required.
-#
-# One-time PyPI setup (https://docs.pypi.org/trusted-publishers/):
-#   On PyPI → project `deepracer` → Publishing, add a GitHub trusted publisher:
-#     owner:       uzairakbar
-#     repository:  deepracer
-#     workflow:    publish-pypi.yml
-#     environment: pypi
-# (For the very first upload, add it as a "pending" publisher before the project exists.)
-
 on:
   release:
     types: [published]
