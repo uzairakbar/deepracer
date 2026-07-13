@@ -1,12 +1,15 @@
 # DeepRacer
 
-A [Gymnasium](https://gymnasium.farama.org/) environment for the
+<p align="center">
+  <img src="docs/deepracer.gif" alt="DeepRacer" width="200">
+</p>
+
+A [Gymnasium](https://gymnasium.farama.org/) wrapper for the
 [AWS DeepRacer](https://github.com/aws-deepracer-community/deepracer-for-cloud)
 simulator. Each `deepracer-v0` environment automatically launches its own
-simulator with Docker, Podman, or Apptainer, then exposes it through the standard
-`gymnasium` API.
+containerized simulator (Docker/Podman/Apptainer), then exposes it through the standard `gymnasium` API.
 
-## Installation
+## Install
 
 Requirements:
 - Python 3.12 or higher.
