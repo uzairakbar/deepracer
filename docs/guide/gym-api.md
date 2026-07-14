@@ -1,3 +1,8 @@
+---
+title: Interfacing with DeepRacer via Gymnasium API
+description: Interface with DeepRacer simulator via Gymnasium API data structures; action spaces, observation spaces and terminal states.
+---
+
 # Gymnasium Interface
 
 The DeepRacer environment follows the standard `gymnasium` API. The three key components are observation space, action space, and termination conditions, each of which is described below.

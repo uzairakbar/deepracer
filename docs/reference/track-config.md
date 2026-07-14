@@ -1,3 +1,8 @@
+---
+title: DeepRacer Gym Track Configuration Reference
+description: Track Configuration parameters for DeepRacer Gym that define the world, and its moving/ static objects.
+---
+
 # Track Configuration
 
 The `track_config` passed to `gym.make("deepracer-v0", track_config=...)` defines the world

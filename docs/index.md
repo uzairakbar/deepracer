@@ -1,7 +1,14 @@
+---
+title: A Gymnasium wrapper for AWS DeepRacer
+description: DeepRacer Gym is a Gymnasium wrapper for the AWS DeepRacer simulator. Containerized simulators are served to environments that expose a standard Gymnasium API.
+---
+
 # DeepRacer Gym
+
 <p align="center">
   <img src="deepracer.gif" alt="DeepRacer" width="200">
 </p>
+
 A [Gymnasium](https://gymnasium.farama.org/) wrapper for the
 [AWS DeepRacer](https://github.com/aws-deepracer-community/deepracer-for-cloud)
 simulator. Each `deepracer-v0` environment automatically launches its own containerized simulator
@@ -59,7 +66,7 @@ If you use **DeepRacer Gym** in your work, please cite it. You can use the follo
     author    = {Akbar, Uzair},
     title     = {{DeepRacer Gym}},
     year      = {2026},
-    version   = {0.1.0},
+    version   = {0.1.1},
     publisher = {Zenodo},
     doi       = {10.5281/zenodo.21360352},
     url       = {https://doi.org/10.5281/zenodo.21360352}
@@ -68,7 +75,7 @@ If you use **DeepRacer Gym** in your work, please cite it. You can use the follo
 
 Or in plain text:
 
-> Akbar, U. (2026). *DeepRacer Gym (Version 0.1.0)* [Computer software]. Zenodo. https://doi.org/10.5281/zenodo.21360352
+> Akbar, U. (2026). *DeepRacer Gym (Version 0.1.1)* [Computer software]. Zenodo. https://doi.org/10.5281/zenodo.21360352
 
 !!! note
     This is the **concept DOI**, which always resolves to the latest release. To cite a specific version instead, use that release's version DOI from its [Zenodo record](https://doi.org/10.5281/zenodo.21360352).
@@ -77,7 +84,7 @@ Or in plain text:
 
 1. Balaji, B. et al. (2020). *DeepRacer: Autonomous Racing Platform for Experimentation with Sim2Real Reinforcement Learning*. IEEE International Conference on Robotics and Automation (ICRA). https://doi.org/10.1109/ICRA40945.2020.9197465
 
-2. AWS DeepRacer Community. (2026). *deepracer-simapp* [Computer software]. GitHub. https://github.com/aws-deepracer-community/deepracer-simapp
+2. AWS DeepRacer Community. (2026). *deepracer-simapp (Version 6.0.5)* [Computer software]. GitHub. https://github.com/aws-deepracer-community/deepracer-simapp
 
 ## Acknowledgements
 

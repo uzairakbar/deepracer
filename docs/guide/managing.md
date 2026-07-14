@@ -1,3 +1,8 @@
+---
+title: Managing DeepRacer Gym Environments
+description: DeepRacer Gym manages containerized simulations and lifecycle across many Gymnasium environments, including caching, clean up, and parallel roll-outs.
+---
+
 # Managing Environments
 
 Each call to `gym.make("deepracer-v0")` creates a Gymnasium environment and, by default, launches a dedicated simulator instance. You can inspect the simulators currently managed by:

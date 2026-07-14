@@ -1,3 +1,8 @@
+---
+title: Configuring DeepRacer Gym Environments
+description: Customize the DeepRacer Gym environment, including reward functions, action spaces, sensors, and track configuration.
+---
+
 # Configuring Environments
 
 The `deepracer-v0` environment can be customized by specifying configurations in `gym.make()`:

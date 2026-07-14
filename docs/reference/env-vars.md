@@ -1,3 +1,8 @@
+---
+title: DeepRacer Gym Environment Variable Reference
+description: Reference for the environment variables that configure the simulator image, container backend, concurrency, and readiness timeouts.
+---
+
 # Environment Variables
 
 The following process-level environment variables tune the client. They are read once when
@@ -15,7 +20,7 @@ The following process-level environment variables tune the client. They are read
     === "Shell"
     
         ```bash
-        DEEPRACER_BACKEND=podman DEEPRACER_MAX_ENVS=2 python train.py
+        DEEPRACER_BACKEND=podman DEEPRACER_MAX_ENVS=2 python rollout.py
         ```
     
     === "Python"
