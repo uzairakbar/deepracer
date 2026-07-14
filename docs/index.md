@@ -71,7 +71,7 @@ Or in plain text:
 > Akbar, U. (2026). *DeepRacer Gym (Version 0.1.0)* [Computer software]. Zenodo. https://doi.org/10.5281/zenodo.21360352
 
 !!! note
-    This is the **concept DOI**, which always resolves to the latest release. To cite a specific version instead, use that release's version DOI from its [Zenodo record](https://doi.org/#).
+    This is the **concept DOI**, which always resolves to the latest release. To cite a specific version instead, use that release's version DOI from its [Zenodo record](https://doi.org/10.5281/zenodo.21360352).
 
 ## References
 
