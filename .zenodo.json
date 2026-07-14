@@ -14,5 +14,17 @@
     "reinforcement-learning",
     "autonomous-racing",
     "robotics-simulator"
+  ],
+  "related_identifiers": [
+    {
+      "identifier": "https://github.com/uzairakbar/deepracer",
+      "relation": "isSupplementTo",
+      "scheme": "url"
+    },
+    {
+      "identifier": "https://pypi.org/project/deepracer/",
+      "relation": "isIdenticalTo",
+      "scheme": "url"
+    }
   ]
 }

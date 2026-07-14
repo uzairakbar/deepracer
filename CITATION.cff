@@ -1,12 +1,12 @@
 cff-version: 1.2.0
-message: "If you use this software, please cite it as below."
+message: "If you use this software, please cite it using the metadata from this file."
 title: "DeepRacer Gym"
 abstract: "A Gymnasium wrapper for the AWS DeepRacer simulator."
 type: software
 authors:
   - given-names: Uzair
     family-names: Akbar
-    email: uzairakbar025@gmail.com
+    orcid: https://orcid.org/0009-0001-7826-3578
 license: MIT
 repository-code: "https://github.com/uzairakbar/deepracer"
 url: "https://github.com/uzairakbar/deepracer"
@@ -18,3 +18,5 @@ keywords:
   - reinforcement-learning
   - autonomous-racing
   - robotics-simulator
+# Concept DOI: resolves to the latest version on Zenodo.
+doi: 10.5281/zenodo.21360352
