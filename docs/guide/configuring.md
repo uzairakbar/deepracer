@@ -26,7 +26,7 @@ You can use the packaged default reward function, or define a custom one:
 
         ```python
         def reward_function(params):
-            """Example of rewarding the agent for lap complettion"""
+            """Example of rewarding the agent for lap completion"""
             
             if params["progress"] >= 100:
                 reward = 1
