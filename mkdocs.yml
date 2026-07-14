@@ -1,5 +1,5 @@
 site_name: DeepRacer Gym
-site_description: A Gymnasium environment for the AWS DeepRacer simulator.
+site_description: A Gymnasium wrapper for the AWS DeepRacer simulator.
 site_url: https://uzairakbar.com/deepracer/
 repo_url: https://github.com/uzairakbar/deepracer
 repo_name: uzairakbar/deepracer
