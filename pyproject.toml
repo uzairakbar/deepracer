@@ -35,6 +35,7 @@ dev = [
     "pytest-cov",
     "pre-commit>=4",
     "types-PyYAML",
+    "bump-my-version",
 ]
 docs = [
     "mkdocs-material>=9.5",
