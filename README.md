@@ -21,20 +21,22 @@ containerized simulator (Docker/Podman/Apptainer), then exposes it through the s
 ## Install
 
 Requirements:
-- Python 3.12 or higher.
-- A container runtime: Docker, Podman, or Apptainer (e.g., for rootless runs on HPC).
+- Python 3.12+
+- Linux (tested on Ubuntu 20.04+), macOS, or Windows (via WSL2)
+- A container runtime: Docker, Podman, or Apptainer (e.g. for rootless runs on HPC)
+- Sufficient hardware resources (recommended ~3 CPUs, ~6 GB RAM per environment)
 
 ```bash
 pip install deepracer
 ```
 
-## Usage
+## Quick Start
 
 ```python
 import gymnasium as gym
-import deepracer  # registers the deepracer-v0 environment
+import deepracer
 
-env = gym.make('deepracer-v0')
+env = gym.make("deepracer-v0")      # starts a simulator service on demand
 
 observation, info = env.reset()
 
