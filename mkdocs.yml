@@ -43,6 +43,7 @@ nav:
   - Reference:
       - Track Catalog: reference/tracks.md
       - Track Configuration: reference/track-config.md
+      - Environment Variables: reference/env-vars.md
 
 markdown_extensions:
   - admonition
