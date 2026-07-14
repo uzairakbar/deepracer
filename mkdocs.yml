@@ -3,7 +3,11 @@ site_description: A Gymnasium wrapper for the AWS DeepRacer simulator.
 site_url: https://uzairakbar.com/deepracer/
 repo_url: https://github.com/uzairakbar/deepracer
 repo_name: uzairakbar/deepracer
-copyright: Copyright &copy; Uzair Akbar
+copyright: >
+  Copyright &copy;
+  <a href="https://uzairakbar.com" target="_blank" rel="noopener">
+    Uzair Akbar
+  </a>
 
 docs_dir: docs
 
