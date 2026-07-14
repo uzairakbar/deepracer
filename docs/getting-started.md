@@ -1,3 +1,8 @@
+---
+title: Getting Started with DeepRacer Gym
+description: Install DeepRacer Gym with pip or uv and run your first AWS DeepRacer simulator rollout using the Gymnasium API in a few lines of Python.
+---
+
 # Getting Started
 
 ## Requirements

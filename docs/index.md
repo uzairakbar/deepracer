@@ -1,3 +1,8 @@
+---
+title: A Gymnasium wrapper for AWS DeepRacer
+description: DeepRacer Gym is a Gymnasium wrapper for the AWS DeepRacer simulator. Containerized simulators are served to environments that expose a standard Gymnasium API.
+---
+
 # DeepRacer Gym
 <p align="center">
   <img src="deepracer.gif" alt="DeepRacer" width="200">

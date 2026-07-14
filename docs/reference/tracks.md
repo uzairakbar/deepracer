@@ -1,3 +1,8 @@
+---
+title: DeepRacer Gym Track Catalog
+description: The full list of AWS DeepRacer world names accepted by the WORLD_NAME track configuration setting in DeepRacer Gym.
+---
+
 # Track Catalog
 
 Listed below is every value accepted by `WORLD_NAME` in [Track Configuration](track-config.md). <br>View the track layouts in the
