@@ -1,4 +1,4 @@
-# DeepRacer
+# DeepRacer Gym
 
 [![PyPI](https://img.shields.io/pypi/v/deepracer?logo=pypi&logoColor=white)](https://pypi.org/project/deepracer/)
 [![Downloads](https://img.shields.io/pepy/dt/deepracer?logo=data%3Aimage%2Fsvg%2Bxml%3Bbase64%2CPHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCI%2BPHBhdGggZmlsbD0id2hpdGUiIGQ9Ik01LDIwSDE5VjE4SDVNMTksOUgxNVYzSDlWOUg1TDEyLDE2TDE5LDlaIi8%2BPC9zdmc%2B&label=downloads)](https://pepy.tech/project/deepracer)
@@ -10,7 +10,7 @@
 [![DOI](https://zenodo.org/badge/1297933489.svg)](https://zenodo.org/badge/latestdoi/1297933489)
 
 <p align="center">
-  <img src="docs/deepracer.gif" alt="DeepRacer" width="200">
+  <img src="https://raw.githubusercontent.com/uzairakbar/deepracer/main/docs/deepracer.gif" alt="DeepRacer" width="200">
 </p>
 
 A [Gymnasium](https://gymnasium.farama.org/) wrapper for the
