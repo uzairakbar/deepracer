@@ -1,0 +1,41 @@
+[tool.bumpversion]
+current_version = "0.0.0"
+allow_dirty = true
+commit = false
+tag = false
+
+# pyproject.toml is the single source of truth; every other version string is
+# kept in lock-step by bump-my-version (`bump-my-version bump <part>`).
+
+[[tool.bumpversion.files]]
+filename = "pyproject.toml"
+search = 'version = "{current_version}"'
+replace = 'version = "{new_version}"'
+
+[[tool.bumpversion.files]]
+filename = "CITATION.cff"
+search = "version: {current_version}"
+replace = "version: {new_version}"
+
+[[tool.bumpversion.files]]
+filename = "CITATION.cff"
+regex = true
+search = 'date-released: "\d{{4}}-\d{{2}}-\d{{2}}"'
+replace = 'date-released: "{now:%Y-%m-%d}"'
+
+[[tool.bumpversion.files]]
+filename = "docs/index.md"
+search = "{current_version}"
+replace = "{new_version}"
+
+[[tool.bumpversion.files]]
+filename = "docs/index.md"
+regex = true
+search = 'year      = \{{\d{{4}}\}}'
+replace = 'year      = {{{now:%Y}}}'
+
+[[tool.bumpversion.files]]
+filename = "docs/index.md"
+regex = true
+search = 'Akbar, U. \(\d{{4}}\)'
+replace = 'Akbar, U. ({now:%Y})'

@@ -1,18 +1,18 @@
-import zmq
 import msgpack
-
 import msgpack_numpy as m
+import zmq
+
 m.patch()
 
 
-PORT: int=8888
-HOST: str='127.0.0.1'
-TIMEOUT_LONG: int=500_000   # ~8.3 m
-TIMEOUT_SHORT: int=100_000  # ~1.7 m
+PORT: int = 8888
+HOST: str = "127.0.0.1"
+TIMEOUT_LONG: int = 500_000  # ~8.3 m
+TIMEOUT_SHORT: int = 100_000  # ~1.7 m
 
 
 class DeepracerClientZMQ:
-    def __init__(self, host: str=HOST, port: int=PORT):
+    def __init__(self, host: str = HOST, port: int = PORT):
         self.host = host
         self.port = port
         self.socket = zmq.Context().socket(zmq.REQ)
@@ -27,22 +27,22 @@ class DeepracerClientZMQ:
         # discarding on close loses nothing.
         self.socket.set(zmq.LINGER, 0)
 
-        self.socket.connect(f'tcp://{self.host}:{self.port}')
-    
+        self.socket.connect(f"tcp://{self.host}:{self.port}")
+
     def ready(self):
-        message: dict[str, int] = {'ready': 1}
+        message: dict[str, int] = {"ready": 1}
         self._send_message(message)
 
-    def recieve_response(self):
+    def recieve_response(self) -> dict:
         packed_response = self.socket.recv()
         response = msgpack.unpackb(packed_response)
         return response
 
-    def send_message(self, message: dict[str, object]):
+    def send_message(self, message: dict[str, object]) -> dict:
         self._send_message(message)
         response = self.recieve_response()
         return response
-    
+
     def _send_message(self, message: dict[str, object]):
         packed_message = msgpack.packb(message)
         self.socket.send(packed_message)

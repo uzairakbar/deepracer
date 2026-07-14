@@ -2,14 +2,14 @@ import pathlib
 
 import pytest
 
-
-FAKE_IMAGE = 'deepracer-fake-sim:test'
-FIXTURE_DIR = pathlib.Path(__file__).parent / 'fixtures' / 'fakesim'
+FAKE_IMAGE = "deepracer-fake-sim:test"
+FIXTURE_DIR = pathlib.Path(__file__).parent / "fixtures" / "fakesim"
 
 
 def _docker_available() -> bool:
     try:
         import docker
+
         docker.from_env().ping()
         return True
     except Exception:
@@ -17,14 +17,16 @@ def _docker_available() -> bool:
 
 
 requires_docker = pytest.mark.skipif(
-    not _docker_available(), reason='Docker daemon not available',
+    not _docker_available(),
+    reason="Docker daemon not available",
 )
 
 
-@pytest.fixture(scope='session')
+@pytest.fixture(scope="session")
 def fake_image():
     """Build the lightweight fake-sim image once per test session."""
     import docker
+
     client = docker.from_env()
     client.images.build(path=str(FIXTURE_DIR), tag=FAKE_IMAGE, rm=True)
     return FAKE_IMAGE
@@ -33,6 +35,7 @@ def fake_image():
 @pytest.fixture
 def docker_backend():
     from deepracer.service.backends import DockerBackend
+
     return DockerBackend()
 
 
@@ -42,9 +45,11 @@ def cleanup_managed():
     yield
     try:
         import docker
+
         client = docker.from_env()
-        for c in client.containers.list(all=True,
-                                        filters={'label': 'deepracer.managed=true'}):
+        for c in client.containers.list(
+            all=True, filters={"label": "deepracer.managed=true"}
+        ):
             try:
                 c.remove(force=True)
             except Exception:

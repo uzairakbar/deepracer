@@ -1,0 +1,75 @@
+site_name: DeepRacer Gym
+site_description: A Gymnasium environment for the AWS DeepRacer simulator.
+site_url: https://uzairakbar.com/deepracer/
+repo_url: https://github.com/uzairakbar/deepracer
+repo_name: uzairakbar/deepracer
+copyright: Copyright &copy; Uzair Akbar
+
+docs_dir: docs
+
+theme:
+  name: material
+  palette:
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      primary: teal
+      accent: teal
+      toggle:
+        icon: material/weather-night
+        name: Switch to dark mode
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: teal
+      accent: teal
+      toggle:
+        icon: material/weather-sunny
+        name: Switch to light mode
+  features:
+    - navigation.instant
+    - navigation.tracking
+    - navigation.top
+    - navigation.sections
+    - toc.follow
+    - content.code.copy
+    - content.code.annotate
+
+nav:
+  - Home: index.md
+  - Getting Started: getting-started.md
+  - User Guide:
+      - Configuring Environments: guide/configuring.md
+      - Gymnasium Interface: guide/gym-api.md
+      - Managing Environments: guide/managing.md
+  - Reference:
+      - Track Catalog: reference/tracks.md
+      - Track Configuration: reference/track-config.md
+      - Environment Variables: reference/env-vars.md
+
+markdown_extensions:
+  - admonition
+  - attr_list
+  - md_in_html
+  - tables
+  - toc:
+      permalink: true
+  - pymdownx.highlight:
+      anchor_linenums: true
+  - pymdownx.inlinehilite
+  - pymdownx.snippets:
+      base_path: ["."]
+      check_paths: true
+  - pymdownx.superfences
+  - pymdownx.details
+  - pymdownx.tabbed:
+      alternate_style: true
+  - pymdownx.emoji:
+      emoji_index: !!python/name:material.extensions.emoji.twemoji
+      emoji_generator: !!python/name:material.extensions.emoji.to_svg
+
+extra_css:
+  - stylesheets/extra.css
+
+extra:
+  analytics:
+    provider: google
+    property: G-NJDWSHXDM0

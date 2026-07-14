@@ -1,0 +1,18 @@
+{
+  "title": "DeepRacer Gym",
+  "description": "A Gymnasium wrapper for the AWS DeepRacer simulator.",
+  "upload_type": "software",
+  "license": "MIT",
+  "creators": [
+    {
+      "name": "Akbar, Uzair"
+    }
+  ],
+  "keywords": [
+    "deepracer",
+    "gymnasium",
+    "reinforcement-learning",
+    "autonomous-racing",
+    "robotics-simulator"
+  ]
+}

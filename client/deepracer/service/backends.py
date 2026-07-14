@@ -70,7 +70,7 @@ class SimBackend(abc.ABC):
 
     def pause(self, handle: SimHandle) -> None:
         '''Freeze an idle warm container (SIGSTOP via the runtime) so it stops
-        burning CPU while parked in the idle pool. Best-effort; no-op for runtimes 
+        burning CPU while parked in the idle pool. Best-effort; no-op for runtimes
         that cannot pause instances (e.g. Apptainer). Overridden by OCI backends.'''
         return None
 

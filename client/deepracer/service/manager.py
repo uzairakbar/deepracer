@@ -45,7 +45,7 @@ def _zmq_reserves(port: int, timeout: float=5.0) -> bool:
         import msgpack
     except Exception:
         return _tcp_open('127.0.0.1', port)      # no zmq here; best-effort
-    ctx = zmq.Context.instance()
+    ctx: zmq.Context = zmq.Context.instance()
     sock = ctx.socket(zmq.REQ)
     sock.setsockopt(zmq.LINGER, 0)
     sock.setsockopt(zmq.RCVTIMEO, int(timeout * 1000))

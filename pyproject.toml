@@ -5,9 +5,9 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "deepracer"
 version = "0.0.0"
-description = "A Gymnasium environment for the AWS DeepRacer simulator"
+description = "A Gymnasium wrapper for the AWS DeepRacer simulator"
 readme = "README.md"
-requires-python = ">=3.10"
+requires-python = ">=3.12"
 authors = [{ name = "Uzair Akbar", email = "uzairakbar025@gmail.com" }]
 dependencies = [
     "numpy",
@@ -22,13 +22,48 @@ dependencies = [
 ]
 classifiers = [
     "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.12",
     "License :: OSI Approved :: MIT License",
     "Operating System :: OS Independent",
+]
+
+[project.optional-dependencies]
+dev = [
+    "ruff>=0.15",
+    "mypy>=1.14",
+    "pytest>=8",
+    "pytest-cov",
+    "pre-commit>=4",
+    "types-PyYAML",
+    "bump-my-version",
+]
+docs = [
+    "mkdocs-material>=9.5",
+    "pymdown-extensions>=10",
 ]
 
 [project.urls]
 Homepage = "https://github.com/uzairakbar/deepracer"
 Repository = "https://github.com/uzairakbar/deepracer"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-ra"
+# put project root in sys.path to resolve `from tests.conftest import ...`
+pythonpath = ["."]
+
+[tool.ruff]
+target-version = "py312"
+line-length = 88
+extend-exclude = ["service"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B"]
+
+[tool.mypy]
+python_version = "3.12"
+files = ["client/deepracer"]
+ignore_missing_imports = true
 
 # Distribution only includes the importable `deepracer` client/
 [tool.setuptools.packages.find]

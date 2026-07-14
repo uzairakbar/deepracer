@@ -1,0 +1,20 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite it as below."
+title: "DeepRacer Gym"
+abstract: "A Gymnasium wrapper for the AWS DeepRacer simulator."
+type: software
+authors:
+  - given-names: Uzair
+    family-names: Akbar
+    email: uzairakbar025@gmail.com
+license: MIT
+repository-code: "https://github.com/uzairakbar/deepracer"
+url: "https://github.com/uzairakbar/deepracer"
+version: 0.0.0
+date-released: "2026-07-12"
+keywords:
+  - deepracer
+  - gymnasium
+  - reinforcement-learning
+  - autonomous-racing
+  - robotics-simulator
