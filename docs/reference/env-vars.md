@@ -20,7 +20,7 @@ The following process-level environment variables tune the client. They are read
     === "Shell"
     
         ```bash
-        DEEPRACER_BACKEND=podman DEEPRACER_MAX_ENVS=2 python train.py
+        DEEPRACER_BACKEND=podman DEEPRACER_MAX_ENVS=2 python rollout.py
         ```
     
     === "Python"
