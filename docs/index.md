@@ -59,7 +59,7 @@ If you use **DeepRacer Gym** in your work, please cite it. You can use the follo
     author    = {Akbar, Uzair},
     title     = {{DeepRacer Gym}},
     year      = {2026},
-    version   = {0.0.0},
+    version   = {0.1.0},
     publisher = {GitHub},
     url       = {https://github.com/uzairakbar/deepracer},
     note      = {Computer software}
@@ -68,7 +68,7 @@ If you use **DeepRacer Gym** in your work, please cite it. You can use the follo
 
 Or in plain text:
 
-> Akbar, U. (2026). *DeepRacer Gym (Version 0.0.0)* [Computer software]. GitHub. https://github.com/uzairakbar/deepracer
+> Akbar, U. (2026). *DeepRacer Gym (Version 0.1.0)* [Computer software]. GitHub. https://github.com/uzairakbar/deepracer
 
 !!! note
     This is the **concept DOI**, which always resolves to the latest release. To cite a specific version instead, use that release's version DOI from its [Zenodo record](https://doi.org/#).
