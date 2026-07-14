@@ -1,7 +1,7 @@
 cff-version: 1.2.0
 message: "If you use this software, please cite it as below."
 title: "DeepRacer Gym"
-abstract: "A Gymnasium environment for the AWS DeepRacer simulator."
+abstract: "A Gymnasium wrapper for the AWS DeepRacer simulator."
 type: software
 authors:
   - given-names: Uzair

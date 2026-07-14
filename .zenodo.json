@@ -1,6 +1,6 @@
 {
   "title": "DeepRacer Gym",
-  "description": "A Gymnasium environment for the AWS DeepRacer simulator.",
+  "description": "A Gymnasium wrapper for the AWS DeepRacer simulator.",
   "upload_type": "software",
   "license": "MIT",
   "creators": [
