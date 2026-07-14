@@ -44,7 +44,7 @@ observation, reward, terminated, truncated, info = env.step(
     env.action_space.sample()
 )
 
-env.close()
+env.close()                         # stops + removes the simulator service
 ```
 
-See the [`client/`](client/) directory for the full documentation.
+See the [full documentation](https://uzairakbar.com/deepracer/) for details.
