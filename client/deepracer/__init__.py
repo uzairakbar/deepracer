@@ -1,4 +1,12 @@
+from importlib.metadata import PackageNotFoundError
+from importlib.metadata import version as _version
+
 from gymnasium.envs.registration import register
+
+try:
+    __version__ = _version("deepracer")
+except PackageNotFoundError:  # running from a source tree without an install
+    __version__ = "0.0.0"
 
 register(id="deepracer-v0", entry_point="deepracer.envs:DeepracerGymEnv")
 
