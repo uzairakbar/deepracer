@@ -43,8 +43,9 @@ docs = [
 ]
 
 [project.urls]
-Homepage = "https://uzairakbar.com/deepracer/"
+Homepage = "https://uzairakbar.github.com/deepracer/"
 Repository = "https://github.com/uzairakbar/deepracer"
+Documentation = "https://uzairakbar.github.com/deepracer/"
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
