@@ -4,9 +4,11 @@ description: DeepRacer Gym is a Gymnasium wrapper for the AWS DeepRacer simulato
 ---
 
 # DeepRacer Gym
+
 <p align="center">
   <img src="deepracer.gif" alt="DeepRacer" width="200">
 </p>
+
 A [Gymnasium](https://gymnasium.farama.org/) wrapper for the
 [AWS DeepRacer](https://github.com/aws-deepracer-community/deepracer-for-cloud)
 simulator. Each `deepracer-v0` environment automatically launches its own containerized simulator
@@ -82,7 +84,7 @@ Or in plain text:
 
 1. Balaji, B. et al. (2020). *DeepRacer: Autonomous Racing Platform for Experimentation with Sim2Real Reinforcement Learning*. IEEE International Conference on Robotics and Automation (ICRA). https://doi.org/10.1109/ICRA40945.2020.9197465
 
-2. AWS DeepRacer Community. (2026). *deepracer-simapp* [Computer software]. GitHub. https://github.com/aws-deepracer-community/deepracer-simapp
+2. AWS DeepRacer Community. (2026). *deepracer-simapp (Version 6.0.5)* [Computer software]. GitHub. https://github.com/aws-deepracer-community/deepracer-simapp
 
 ## Acknowledgements
 
