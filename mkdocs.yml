@@ -42,6 +42,7 @@ nav:
       - Managing Environments: guide/managing.md
   - Reference:
       - Track Catalog: reference/tracks.md
+      - Track Configuration: reference/track-config.md
 
 markdown_extensions:
   - admonition
