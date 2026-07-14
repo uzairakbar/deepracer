@@ -40,6 +40,8 @@ nav:
       - Configuring Environments: guide/configuring.md
       - Gymnasium Interface: guide/gym-api.md
       - Managing Environments: guide/managing.md
+  - Reference:
+      - Track Catalog: reference/tracks.md
 
 markdown_extensions:
   - admonition
