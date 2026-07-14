@@ -28,25 +28,25 @@ env.close()                         # stops + removes the simulator service
 
 <div class="grid cards" markdown>
 
--   :material-download: **[Installation](installation.md)**
+-   :material-rocket-launch: **[Getting Started](getting-started.md)**
 
-    Requirements and how to install the package.
+    Install the package and run your first rollout.
 
--   :material-rocket-launch: **[Quick Start](quickstart.md)**
-
-    Create an environment and run your first rollout.
-
--   :material-tune: **[Configuring Environments](configuring.md)**
+-   :material-tune: **[Configuring Environments](guide/configuring.md)**
 
     Reward functions, action/observation spaces, tracks.
 
--   :material-api: **[Gymnasium API](gym-api.md)**
+-   :material-api: **[Gymnasium Interface](guide/gym-api.md)**
 
     Observation space, action space, and terminal states.
 
--   :material-server: **[Managing Environments](managing.md)**
+-   :material-server: **[Managing Environments](guide/managing.md)**
 
     Caching, cleanup, resource limits, and parallel rollouts.
+
+-   :material-book-open-variant: **[Reference](reference/tracks.md)**
+
+    Config keys, the full track catalog, and env vars.
 
 </div>
 

@@ -35,16 +35,17 @@ theme:
 
 nav:
   - Home: index.md
-  - Installation: installation.md
-  - Quick Start: quickstart.md
-  - Configuring Environments: configuring.md
-  - Gymnasium API: gym-api.md
-  - Managing Environments: managing.md
+  - Getting Started: getting-started.md
+  - User Guide:
+      - Configuring Environments: guide/configuring.md
+      - Gymnasium Interface: guide/gym-api.md
+      - Managing Environments: guide/managing.md
 
 markdown_extensions:
   - admonition
   - attr_list
   - md_in_html
+  - tables
   - toc:
       permalink: true
   - pymdownx.highlight:
