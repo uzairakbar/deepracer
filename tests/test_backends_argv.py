@@ -47,8 +47,7 @@ def test_podman_argv_publishes_port_and_passes_env_and_labels():
 def test_qualify_image_only_touches_bare_short_names():
     # bare short name -> docker.io-qualified (Podman enforcing short-name-mode)
     assert (
-        B.qualify_image("someuser/some-image:v0")
-        == "docker.io/someuser/some-image:v0"
+        B.qualify_image("someuser/some-image:v0") == "docker.io/someuser/some-image:v0"
     )
     assert B.qualify_image("alpine") == "docker.io/alpine"
     # already-qualified / local / non-docker refs are left alone
