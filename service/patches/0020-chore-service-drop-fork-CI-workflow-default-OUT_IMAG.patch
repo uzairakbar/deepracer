@@ -2,7 +2,7 @@ From 02d12c2475dc34c98b443d107b02a31d4da8426f Mon Sep 17 00:00:00 2001
 From: Uzair Akbar <uzairakbar025@gmail.com>
 Date: Sat, 4 Jul 2026 17:11:31 -0400
 Subject: [PATCH 20/20] chore(service): drop fork CI workflow + default
- OUT_IMAGE to deepracer-test:v0
+ OUT_IMAGE to ghcr.io deepracer:v0
 
 ---
  .github/workflows/build-and-push.yml | 84 ----------------------------
@@ -106,10 +106,10 @@ index ed350c8..9e1c2ba 100755
 +++ b/build-zmqsim.sh
 @@ -16,7 +16,7 @@ VERSION="$(jq -r '.simapp' VERSION)"
  # Output image is overridable so CI can tag per-architecture (e.g.
- # uzairakbar/deepracer-test:v0-amd64). Set PUSH=1 to push it after building.
+ # ghcr.io/uzairakbar/deepracer:v0-amd64). Set PUSH=1 to push it after building.
  # Note: Docker repository names must be lowercase.
 -OUT_IMAGE="${OUT_IMAGE:-uzairakbar/deepracer:v1}"
-+OUT_IMAGE="${OUT_IMAGE:-uzairakbar/deepracer-test:v0}"
++OUT_IMAGE="${OUT_IMAGE:-ghcr.io/uzairakbar/deepracer:v0}"
  PUSH="${PUSH:-0}"
  
  # Default to the host architecture (native build, no emulation). Override with

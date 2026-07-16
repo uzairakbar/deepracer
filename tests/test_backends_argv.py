@@ -47,11 +47,14 @@ def test_podman_argv_publishes_port_and_passes_env_and_labels():
 def test_qualify_image_only_touches_bare_short_names():
     # bare short name -> docker.io-qualified (Podman enforcing short-name-mode)
     assert (
-        B.qualify_image("uzairakbar/deepracer-test:v0")
-        == "docker.io/uzairakbar/deepracer-test:v0"
+        B.qualify_image("someuser/some-image:v0") == "docker.io/someuser/some-image:v0"
     )
     assert B.qualify_image("alpine") == "docker.io/alpine"
     # already-qualified / local / non-docker refs are left alone
+    assert (
+        B.qualify_image("ghcr.io/uzairakbar/deepracer:v0")
+        == "ghcr.io/uzairakbar/deepracer:v0"
+    )
     assert B.qualify_image("docker.io/uzairakbar/x:v0") == "docker.io/uzairakbar/x:v0"
     assert (
         B.qualify_image("registry.example.com:5000/x:v0")
@@ -98,10 +101,10 @@ def test_resolve_sif_passes_through_sif_and_pulls_docker(monkeypatch, tmp_path):
     assert rec.calls == []
     # a docker name is pulled once to a cached sif under scratch
     monkeypatch.setattr(be, "_scratch", lambda: str(tmp_path))
-    sif = be._resolve_sif("uzairakbar/deepracer-test:v0")
+    sif = be._resolve_sif("ghcr.io/uzairakbar/deepracer:v0")
     assert sif.startswith(str(tmp_path)) and sif.endswith(".sif")
     assert rec.calls[0][:3] == ["apptainer", "pull", "--force"]
-    assert rec.calls[0][-1] == "docker://uzairakbar/deepracer-test:v0"
+    assert rec.calls[0][-1] == "docker://ghcr.io/uzairakbar/deepracer:v0"
 
 
 def test_apptainer_backend_start_uses_sif_and_apptainerenv(monkeypatch):

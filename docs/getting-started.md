@@ -52,7 +52,7 @@ observation, info = env.reset()         # reset env, start the episode rollout
 
 print("Start DeepRacer rollout")
 total_reward = 0
-episode_over = True
+episode_over = False
 
 while not episode_over:
     observation, reward, terminated, truncated, info = env.step(

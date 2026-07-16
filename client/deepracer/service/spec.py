@@ -6,7 +6,7 @@ from deepracer.service.identity import Identity, fingerprint
 
 
 # Default simulator image. Override DEEPRACER_IMAGE for local builds or tests.
-DEFAULT_IMAGE: str=os.environ.get('DEEPRACER_IMAGE', 'uzairakbar/deepracer-test:v0')
+DEFAULT_IMAGE: str=os.environ.get('DEEPRACER_IMAGE', 'ghcr.io/uzairakbar/deepracer:v0')
 # The container's internal ZMQ bind; OCI backends publish it to identity.port.
 INTERNAL_PORT: int=8888
 # Discovery-label namespace (docker/podman labels; used by clean + running()).

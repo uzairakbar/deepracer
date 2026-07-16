@@ -109,7 +109,7 @@ index 45851da..ed350c8 100755
  VERSION="$(jq -r '.simapp' VERSION)"
 -OUT_IMAGE="uzairakbar/deepracer:v1"
 +# Output image is overridable so CI can tag per-architecture (e.g.
-+# uzairakbar/deepracer-test:v0-amd64). Set PUSH=1 to push it after building.
++# ghcr.io/uzairakbar/deepracer:v0-amd64). Set PUSH=1 to push it after building.
 +# Note: Docker repository names must be lowercase.
 +OUT_IMAGE="${OUT_IMAGE:-uzairakbar/deepracer:v1}"
 +PUSH="${PUSH:-0}"

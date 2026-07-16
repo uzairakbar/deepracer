@@ -2,7 +2,7 @@
 # Assemble the pinned upstream plus patches in a temporary tree and build the image.
 # Offline: reads the vendored submodule, no network. Requires Docker.
 # Env passthrough to build-zmqsim.sh:
-#   ARCH=amd64|arm64   OUT_IMAGE=uzairakbar/deepracer-test:v0[-<arch>]   PUSH=0|1
+#   ARCH=amd64|arm64   OUT_IMAGE=ghcr.io/uzairakbar/deepracer:v0[-<arch>]   PUSH=0|1
 set -euo pipefail
 SERVICE="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 ROOT="$(git -C "$SERVICE" rev-parse --show-toplevel)"
