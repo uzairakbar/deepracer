@@ -16,8 +16,6 @@ Match legacy launch-simapp-rosnodes.sh: use the generated defaults
 without the /configs merge in eval mode (obstacle/bot-car counts are
 already inlined into the defaults), and force WORLD_NAME into the final
 yaml in all modes with a log line for verification.
-
-Co-Authored-By: Claude Fable 5 <noreply@anthropic.com>
 ---
  docker/files/ml-code/entrypoint.sh | 27 ++++++++++++++++++++++++---
  1 file changed, 24 insertions(+), 3 deletions(-)
