@@ -6,7 +6,7 @@
 [![License: MIT](https://img.shields.io/github/license/uzairakbar/deepracer?logo=opensourceinitiative&logoColor=white)](LICENSE)
 [![Tests](https://img.shields.io/github/actions/workflow/status/uzairakbar/deepracer/test.yml?branch=develop&logo=githubactions&logoColor=white&label=tests)](https://github.com/uzairakbar/deepracer/actions/workflows/test.yml)
 [![Coverage](https://img.shields.io/codecov/c/github/uzairakbar/deepracer?branch=develop&logo=pytest&logoColor=white)](https://codecov.io/gh/uzairakbar/deepracer)
-[![Docker Pulls](https://img.shields.io/docker/pulls/uzairakbar/deepracer-test?logo=docker&logoColor=white&label=pulls)](https://hub.docker.com/r/uzairakbar/deepracer-test)
+[![Container](https://img.shields.io/badge/ghcr.io-uzairakbar%2Fdeepracer-blue?logo=docker&logoColor=white)](https://github.com/uzairakbar/deepracer/pkgs/container/deepracer)
 [![DOI](https://zenodo.org/badge/1297933489.svg)](https://zenodo.org/badge/latestdoi/1297933489)
 
 <p align="center">

@@ -36,6 +36,7 @@ is used. <br>See [Configuring Environments](../guide/configuring.md) for an exam
 | `RESET_BEHIND_DIST` | float (m) | `2.0` | Minimum distance to obstacle(s) at spawn time. |
 | `RESET_AHEAD_DIST` | float (m) | `2.0` | Meters ahead for mercy reset teleport. |
 | `ENABLE_MERCY_RESET` | bool | `true` | Teleports car ahead of nearby object after repeated crashes. |
+| `MAX_RESETS_AFTER_CRASH` | int | `3` | Number of crashes to trigger "mercy reset" |
 
 !!! todo "Maintainer: undocumented keys"
     This list is not exhaustive, and the simulator may accept additional keys beyond those above (several undocumented in the

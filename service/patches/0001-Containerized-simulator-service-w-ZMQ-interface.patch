@@ -17,8 +17,8 @@ Subject: [PATCH 01/20] Containerized simulator service w/ ZMQ interface
  .../launch/racetrack_with_racecar.launch.py   |   4 +-
  .../launch/rollout_rl_agent.launch.py         |   2 +-
  docker/Dockerfile.zmqsim                      |  45 +++++
- docker/files/ml-code/entrypoint.sh            | 187 ++++++++++++++++++
- 14 files changed, 498 insertions(+), 67 deletions(-)
+ docker/files/ml-code/entrypoint.sh            | 192 ++++++++++++++++++
+ 14 files changed, 503 insertions(+), 67 deletions(-)
  create mode 100755 build-zmqsim.sh
  create mode 100644 bundle/markov/gym_agent.py
  create mode 100644 docker/Dockerfile.zmqsim
@@ -590,7 +590,7 @@ new file mode 100755
 index 0000000..e641f28
 --- /dev/null
 +++ b/docker/files/ml-code/entrypoint.sh
-@@ -0,0 +1,187 @@
+@@ -0,0 +1,192 @@
 +#!/bin/bash
 +###############################################################################
 +# v1 (uzairakbar/deepracer:v1) pure-simulation entrypoint.
@@ -724,6 +724,7 @@ index 0000000..e641f28
 +echo "REWARD_FILE_S3_KEY:                   \"${REWARD_FUNCTION_S3_KEY}\""
 +echo "MODEL_METADATA_FILE_S3_KEY:           \"${MODEL_METADATA_S3_KEY}\""
 +echo "NUMBER_OF_OBSTACLES:                  \"${NUMBER_OF_OBSTACLES}\""
++echo "MIN_DISTANCE_BETWEEN_OBSTACLES:       \"16.0\""
 +echo "IS_OBSTACLE_BOT_CAR:                  \"false\""
 +echo "RANDOMIZE_OBSTACLE_LOCATIONS:         \"true\""
 +echo "IS_LANE_CHANGE:                       \"false\""
@@ -736,6 +737,10 @@ index 0000000..e641f28
 +echo "BOT_CAR_SPEED:                        \"0.2\""
 +echo "CAR_COLOR:                            \"Blue\""
 +echo "NUMBER_OF_RESETS:                     \"0\""
++echo "ENABLE_MERCY_RESET:                   \"true\""
++echo "RESET_BEHIND_DIST:                    \"2.0\""
++echo "RESET_AHEAD_DIST:                     \"2.0\""
++echo "MAX_RESETS_AFTER_CRASH:               \"3\""
 +echo "RACE_TYPE:                            \"HEAD_TO_BOT\""
 +echo "ENABLE_DOMAIN_RANDOMIZATION:          \"false\""
 +echo "DISPLAY_NAME:                         \"racer\""
