@@ -26,9 +26,9 @@ git add service/patches && git commit # commit patches to this monorepo
 ```
 
 ## Build the image
-To build the simulator service image from source (`upstream @ pin` + `patches/*`), use the `scripts/builf.sh` script as:
+To build the simulator service image from source (`upstream @ pin` + `patches/*`), use the `scripts/build.sh` script as:
 ```bash
-ARCH=amd64 OUT_IMAGE=uzairakbar/deepracer-test:v0-amd64 PUSH=1 \
+ARCH=amd64 OUT_IMAGE=ghcr.io/uzairakbar/deepracer:v0-amd64 PUSH=1 \
   service/scripts/build.sh
 ```
 Our CI (`.github/workflows/build-service-image.yml`) does this for amd64+arm64 and

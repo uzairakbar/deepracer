@@ -10,7 +10,7 @@ The following process-level environment variables tune the client. They are read
 
 | Variable | Default | Controls |
 |---|---|---|
-| `DEEPRACER_IMAGE` | `uzairakbar/`<br>`deepracer:v0` | The simulator image to use. |
+| `DEEPRACER_IMAGE` | `ghcr.io/uzairakbar/`<br>`deepracer:v0` | The simulator image to use. |
 | `DEEPRACER_BACKEND` | *(auto-detected)* | Container runtime: `docker`, `podman`, or `apptainer`. |
 | `DEEPRACER_MAX_ENVS` | `4` | Maximum simulators one process may run at once. |
 | `DEEPRACER_READY_TIMEOUT` | `300` | Seconds to wait for a simulator to become ready <br>before failing. |
