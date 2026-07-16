@@ -4,24 +4,24 @@ name: build-and-push deepracer service image
 # pinned upstream submodule (service/upstream @ v6.0.5), for amd64 and
 # arm64 on native runners (no emulation), pushes per-arch tags, then stitches a
 # multi-arch manifest so `docker pull <image>:<tag>` auto-selects the host arch.
-#
-# Required repo secrets:
-#   DOCKERHUB_USERNAME  - Docker Hub user
-#   DOCKERHUB_TOKEN     - Docker Hub access token (write scope)
 
 on:
   workflow_dispatch:
     inputs:
       image:
         description: "Image repository (no tag)"
-        default: uzairakbar/deepracer-test
+        default: ghcr.io/uzairakbar/deepracer
       tag:
         description: "Image tag"
         default: v0
 
 env:
-  IMAGE: ${{ github.event.inputs.image || 'uzairakbar/deepracer-test' }}
+  IMAGE: ${{ github.event.inputs.image || 'ghcr.io/uzairakbar/deepracer' }}
   TAG: ${{ github.event.inputs.tag || 'v0' }}
+
+permissions:
+  contents: read
+  packages: write
 
 jobs:
   build:
@@ -51,11 +51,12 @@ jobs:
           large-packages: true
           swap-storage: false
 
-      - name: Log in to Docker Hub
+      - name: Log in to GHCR
         uses: docker/login-action@v3
         with:
-          username: ${{ secrets.DOCKERHUB_USERNAME }}
-          password: ${{ secrets.DOCKERHUB_TOKEN }}
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Assemble (upstream + patches) and build & push per-arch image
         env:
@@ -69,11 +70,12 @@ jobs:
     needs: build
     runs-on: ubuntu-24.04
     steps:
-      - name: Log in to Docker Hub
+      - name: Log in to GHCR
         uses: docker/login-action@v3
         with:
-          username: ${{ secrets.DOCKERHUB_USERNAME }}
-          password: ${{ secrets.DOCKERHUB_TOKEN }}
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Create and push manifest
         run: |
