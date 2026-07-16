@@ -23,7 +23,7 @@ is used. <br>See [Configuring Environments](../guide/configuring.md) for an exam
 | `NUMBER_OF_OBSTACLES` | int ≥ 0 | `0` | Number of static obstacles. |
 | `IS_OBSTACLE_BOT_CAR` | bool | `false` | Treat obstacles as bot cars rather than boxes. |
 | `RANDOMIZE_OBSTACLE_LOCATIONS` | bool | `true` | Randomize obstacle placement each episode. |
-| `OBJECT_POSITIONS` | list | — | Explicit `progress, lane` positions; overrides obstacle randomization. |
+| `OBJECT_POSITIONS` | list[float, int] | `[]` | Positions with  `progress, lane` (%age, $\pm 1$ respectively); overrides obstacle randomization. |
 | `NUMBER_OF_BOT_CARS` | int ≥ 0 | `0` | Number of moving bot cars. |
 | `RANDOMIZE_BOT_CAR_LOCATIONS` | bool | `true` | Randomize bot-car placement each episode. |
 | `BOT_CAR_SPEED` | float (m/s) | `0.2` | Bot-car speed. |
@@ -32,8 +32,11 @@ is used. <br>See [Configuring Environments](../guide/configuring.md) for an exam
 | `LOWER_LANE_CHANGE_TIME` | float (s) | `3.0` | Minimum time between bot-car lane changes. |
 | `UPPER_LANE_CHANGE_TIME` | float (s) | `5.0` | Maximum time between bot-car lane changes. |
 | `LANE_CHANGE_DISTANCE` | float (m) | `1.0` | Distance over which a lane change completes. |
-| `MIN_DISTANCE_BETWEEN_OBSTACLES` | float (m) | `2.0` | Minimum distance between obstacle centers. |
-| `RESET_BEHIND_DIST` | float (m) | `1.0` | Minimum distance to obstacle(s) at spawn. |
+| `MIN_DISTANCE_BETWEEN_OBSTACLES` | float (%) | `10.0` | Minimum distance between obstacle centers as %age of track length. |
+| `RESET_BEHIND_DIST` | float (m) | `2.0` | Minimum distance to obstacle(s) at spawn time. |
+| `RESET_AHEAD_DIST` | float (m) | `2.0` | Meters ahead for mercy reset teleport. |
+| `ENABLE_MERCY_RESET` | bool | `true` | Teleports car ahead of "nearest object" after repeated crashes. |
+| `CLOSEST_OBJ_GAP` | float (m) | `2.0` | Search radius to find "nearest obstacle". |
 
 !!! todo "Maintainer: undocumented keys"
     This list is not exhaustive, and the simulator may accept additional keys beyond those above (several undocumented in the

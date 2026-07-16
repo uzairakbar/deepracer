@@ -10,8 +10,6 @@ container alive with a dead/never-bound ZMQ gym server and the client
 blocking silently on recv(). Shutdown propagates the death upward:
 download_params_and_roslaunch_agent.py already polls the inner launch,
 so the whole chain, and eventually the container, exits.
-
-Co-Authored-By: Claude Fable 5 <noreply@anthropic.com>
 ---
  .../launch/rollout_rl_agent.launch.py                    | 9 +++++++--
  1 file changed, 7 insertions(+), 2 deletions(-)

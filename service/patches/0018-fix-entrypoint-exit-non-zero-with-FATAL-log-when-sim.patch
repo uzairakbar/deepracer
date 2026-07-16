@@ -9,8 +9,6 @@ died the container exited silently (or lingered), and the gym client
 hung on recv() with no visible cause. Run the launch in the background
 with a TERM/INT trap (docker stop still prompt) and always exit 1 with
 a grep-able FATAL line when it returns.
-
-Co-Authored-By: Claude Fable 5 <noreply@anthropic.com>
 ---
  docker/files/ml-code/entrypoint.sh | 15 ++++++++++++++-
  1 file changed, 14 insertions(+), 1 deletion(-)
