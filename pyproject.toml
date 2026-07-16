@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "deepracer"
-version = "0.1.2"
+version = "0.1.3"
 description = "A Gymnasium wrapper for the AWS DeepRacer simulator"
 readme = "README.md"
 requires-python = ">=3.12"
