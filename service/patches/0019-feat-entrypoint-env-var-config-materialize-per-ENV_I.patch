@@ -15,10 +15,6 @@ Support the deepracer_gym client's mountless, multi-instance workflow:
   shared host netns without DDS/gz cross-talk or Xvfb :6000 collisions.
 - Xvfb: honor the incoming DISPLAY and add -nolisten tcp (drops the TCP :6000
   socket entirely; X clients use the unix socket).
-
-Layers on the base image via the entrypoint only; no bundle changes here.
-
-Co-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>
 ---
  docker/files/ml-code/entrypoint.sh | 35 +++++++++++++++++++++++++-----
  1 file changed, 30 insertions(+), 5 deletions(-)
