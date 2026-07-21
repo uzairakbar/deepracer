@@ -27,7 +27,7 @@ Depending on your `agent_config` specification, the action space takes one of th
 
 ??? info "Continuous action scale and order"
     Keep the following in mind for continuous action spaces:
-    
+
     - **Scale:** Elements are normalized between -1 and 1, representing `low` and `high` values of the respective quantity.
     - **Order:** The `steering_angle` and `speed` occupy the 1st and 2nd
     indices of the 2D action vector/list as `[normalized_steering_angle, normalized_speed]`.

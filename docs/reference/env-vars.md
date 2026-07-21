@@ -18,18 +18,18 @@ The following process-level environment variables tune the client. They are read
 !!! example
 
     === "Shell"
-    
+
         ```bash
         DEEPRACER_BACKEND=podman DEEPRACER_MAX_ENVS=2 python rollout.py
         ```
-    
+
     === "Python"
 
         ```python
         import os
         os.environ["DEEPRACER_MAX_ENVS"] = "2"
         os.environ["DEEPRACER_BACKEND"] = "podman"
-        
+
         import deepracer
         # ...
         ```

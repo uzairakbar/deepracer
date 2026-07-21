@@ -1,14 +1,14 @@
-From c3f12dc14ccbb7543f13237e730d4cf384d9e21d Mon Sep 17 00:00:00 2001
+From 2b79ffbc413443aba4cb135b0bc663bed4112959 Mon Sep 17 00:00:00 2001
 From: Uzair Akbar <uzairakbar025@gmail.com>
 Date: Wed, 1 Jul 2026 15:55:26 -0400
-Subject: [PATCH 12/20] Use lignter, legacy Gazebo render
+Subject: [PATCH 12/23] Use lignter, legacy Gazebo render
 
 ---
  docker/files/ml-code/entrypoint.sh | 5 +++++
  1 file changed, 5 insertions(+)
 
 diff --git a/docker/files/ml-code/entrypoint.sh b/docker/files/ml-code/entrypoint.sh
-index f9b035a..0322bc5 100755
+index 4cadf3e..d6fe2d2 100755
 --- a/docker/files/ml-code/entrypoint.sh
 +++ b/docker/files/ml-code/entrypoint.sh
 @@ -34,6 +34,11 @@ export DEEPRACER_JOB_TYPE_ENV="SAGEONLY"
@@ -24,5 +24,5 @@ index f9b035a..0322bc5 100755
  # Per-user ROS 2 DDS isolation. Apptainer shares the host network namespace
  # (Docker does not), so on a shared node (PACE) every user's nodes default to
 -- 
-2.47.3
+2.39.3 (Apple Git-146)
 

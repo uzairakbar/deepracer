@@ -1,14 +1,14 @@
-From 9903591282a4907ab31a3256c4ba1a4ec8d1090d Mon Sep 17 00:00:00 2001
+From 39b7aeb8a3383a1d3fbc3bfef6d2e8c0d173e7d0 Mon Sep 17 00:00:00 2001
 From: Uzair Akbar <uzairakbar025@gmail.com>
 Date: Wed, 1 Jul 2026 15:55:47 -0400
-Subject: [PATCH 13/20] Turn off cameras for speed.
+Subject: [PATCH 13/23] Turn off cameras for speed.
 
 ---
  docker/files/ml-code/entrypoint.sh | 6 ++++++
  1 file changed, 6 insertions(+)
 
 diff --git a/docker/files/ml-code/entrypoint.sh b/docker/files/ml-code/entrypoint.sh
-index 0322bc5..f97e65b 100755
+index d6fe2d2..beeabd5 100755
 --- a/docker/files/ml-code/entrypoint.sh
 +++ b/docker/files/ml-code/entrypoint.sh
 @@ -144,6 +144,12 @@ DEFAULT_YAML=/opt/ml/code/default_training_params.yaml
@@ -25,5 +25,5 @@ index 0322bc5..f97e65b 100755
  echo "METRICS_S3_BUCKET:                    \"${S3_BUCKET}\""
  echo "METRICS_S3_OBJECT_KEY:                \"${S3_PREFIX}/training_metrics.json\""
 -- 
-2.47.3
+2.39.3 (Apple Git-146)
 

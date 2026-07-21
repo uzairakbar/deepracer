@@ -1,7 +1,7 @@
-From 2cffa4cb033a2601184ee7934ee20cd511c8b2f1 Mon Sep 17 00:00:00 2001
+From 4b0808ed6a3db3b557bc4f8b9b63f431ccfb254f Mon Sep 17 00:00:00 2001
 From: Uzair Akbar <uzairakbar025@gmail.com>
 Date: Fri, 3 Jul 2026 05:26:09 -0400
-Subject: [PATCH 19/20] feat(entrypoint): env-var config materialize +
+Subject: [PATCH 19/23] feat(entrypoint): env-var config materialize +
  per-ENV_ID isolation
 
 Support the deepracer_gym client's mountless, multi-instance workflow:
@@ -20,7 +20,7 @@ Support the deepracer_gym client's mountless, multi-instance workflow:
  1 file changed, 30 insertions(+), 5 deletions(-)
 
 diff --git a/docker/files/ml-code/entrypoint.sh b/docker/files/ml-code/entrypoint.sh
-index ef462f9..c4a807f 100755
+index 166b19b..5a1ce4f 100755
 --- a/docker/files/ml-code/entrypoint.sh
 +++ b/docker/files/ml-code/entrypoint.sh
 @@ -53,7 +53,9 @@ ros_domain_from_user() {
@@ -71,7 +71,7 @@ index ef462f9..c4a807f 100755
  # --------------------------------------------------------------------------- #
  echo "----------"
  echo "EVALUATION: ${EVALUATION}"
-@@ -232,8 +253,12 @@ export GYM_PORT=${GYM_PORT:-8888}
+@@ -237,8 +258,12 @@ export GYM_PORT=${GYM_PORT:-8888}
  # --------------------------------------------------------------------------- #
  # Headless display + launch the simulation (no trainer, no redis)
  # --------------------------------------------------------------------------- #
@@ -87,5 +87,5 @@ index ef462f9..c4a807f 100755
  
  echo "Launching simulation: ros2 launch deepracer_simulation_environment ${SIMULATION_LAUNCH_FILE}"
 -- 
-2.47.3
+2.39.3 (Apple Git-146)
 

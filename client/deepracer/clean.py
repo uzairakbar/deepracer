@@ -1,18 +1,19 @@
 """Maintenance CLI for removing orphaned DeepRacer sims.
 
-    python -m deepracer.clean
+    python -m deepracer.clean [--deep]
 
 Removes managed Docker/Podman containers, DeepRacer Apptainer instances,
 per-instance overlays, and stale Apptainer logs. Best-effort and idempotent.
 """
 
+import argparse
 import glob
 import json
 import os
 import shutil
 import subprocess
 
-from deepracer.service.spec import LABEL_NS
+from deepracer.service.spec import DEFAULT_IMAGE, LABEL_NS
 
 
 def _run(argv):
@@ -64,10 +65,53 @@ def _clean_apptainer() -> None:
     )
 
 
+def _clean_oci_images(binary: str) -> None:
+    if shutil.which(binary) is None:
+        return
+    result = _run([binary, "images", "--format", "{{.Repository}}:{{.Tag}} {{.ID}}"])
+    ids = set()
+    for line in result.stdout.splitlines():
+        parts = line.split()
+        if len(parts) == 2 and ("deepracer" in parts[0] or parts[0] == DEFAULT_IMAGE):
+            ids.add(parts[1])
+    for iid in ids:
+        _run([binary, "rmi", "-f", iid])
+    print(f"{binary}: removed {len(ids)} deepracer image(s).")
+
+
+def _clean_apptainer_images() -> None:
+    # cached SIFs pulled by the apptainer backend (see backends._resolve_sif)
+    sifs = []
+    for base in (os.path.expanduser("~/scratch"), "/tmp"):
+        sifs += glob.glob(os.path.join(base, "deepracer-*.sif"))
+    removed = 0
+    for path in sifs:
+        try:
+            os.remove(path)
+            removed += 1
+        except OSError:
+            pass
+    print(f"apptainer: removed {removed} cached SIF image(s).")
+
+
 def main() -> None:
+    parser = argparse.ArgumentParser(
+        prog="python -m deepracer.clean",
+        description="Remove orphaned DeepRacer sims.",
+    )
+    parser.add_argument(
+        "--deep",
+        action="store_true",
+        help="also delete cached deepracer images",
+    )
+    args = parser.parse_args()
     for binary in ("docker", "podman"):
         _clean_oci(binary)
     _clean_apptainer()
+    if args.deep:
+        for binary in ("docker", "podman"):
+            _clean_oci_images(binary)
+        _clean_apptainer_images()
     print("Done.")
 
 

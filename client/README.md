@@ -220,7 +220,7 @@ Use the cleanup command before starting another batch of environments:
 python -m deepracer.clean
 ```
 
-`python -m deepracer.clean` removes managed Docker/Podman containers and Apptainer instances left behind by interrupted runs.
+`python -m deepracer.clean` removes managed Docker/Podman containers and Apptainer instances left behind by interrupted runs. Add `--deep` to also delete the cached deepracer images.
 
 **Resource limits:** By default, a process can manage up to `DEEPRACER_MAX_ENVS=4` simulators at the
 same time. For each simulator, budget roughly 3 CPUs, 6 GB of memory, and

@@ -9,7 +9,7 @@ Each call to `gym.make("deepracer-v0")` creates a Gymnasium environment and, by 
 
 ```python
 import deepracer
-deepracer.running()         # list managed simulators on this host
+deepracer.running()             # list managed simulators on this host
 ```
 
 You can also inspect running simulator services directly through your container runtime:
@@ -40,18 +40,19 @@ done, or if you want to reclaim resources, stop all simulators managed by the cu
 
 ```python
 import deepracer
-deepracer.shutdown_all()    # stop simulators owned by this process
+deepracer.shutdown_all()            # stop simulators owned by this process
 ```
 
 If your notebook, script, or job is interrupted, a running simulator can be left behind. In this case, you can use the following
 cleanup command before starting another batch of environments:
 
 ```bash
-python -m deepracer.clean   # purge *all* running deepracer simulators
+python -m deepracer.clean           # purge *all* running deepracer simulators
+python -m deepracer.clean --deep    # ... also delete *all* cached images/SIFs
 ```
 
-This will remove *all* managed Docker/Podman containers and Apptainer
-instances.
+This will remove *all* managed Docker/Podman containers/images and Apptainer
+instances/SIFs.
 
 ## Resource limits
 

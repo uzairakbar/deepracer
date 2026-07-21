@@ -1,0 +1,72 @@
+From 7febc5a4f657a4ef83846e69fd065ecc2006aa69 Mon Sep 17 00:00:00 2001
+From: Uzair Akbar <uzairakbar025@gmail.com>
+Date: Tue, 21 Jul 2026 06:21:47 -0400
+Subject: [PATCH 23/23] fix(sim): repair latent ROS2-port bugs in visual
+ trackers
+
+Domain randomization crashed at first reset (NameError: SetVisualColor)
+once visuals actually matched: the color tracker constructed the singular
+Response type without importing it, and both visual trackers assigned
+dict views to ROS2 message arrays, which rosidl rejects. Both were dead
+code since the ROS2 port because the randomizer matched zero visuals
+until the double-prefix fix. Import the singular type and coerce the
+batched values to lists.
+---
+ .../trackers/set_visual_color_tracker.py          | 15 ++++++++-------
+ .../trackers/set_visual_transparency_tracker.py   |  7 ++++---
+ 2 files changed, 12 insertions(+), 10 deletions(-)
+
+diff --git a/bundle/markov/gazebo_tracker/trackers/set_visual_color_tracker.py b/bundle/markov/gazebo_tracker/trackers/set_visual_color_tracker.py
+index 89af0b7..0865db4 100644
+--- a/bundle/markov/gazebo_tracker/trackers/set_visual_color_tracker.py
++++ b/bundle/markov/gazebo_tracker/trackers/set_visual_color_tracker.py
+@@ -22,7 +22,7 @@ from markov.domain_randomizations.constants import GazeboServiceName
+ from markov.rclpy_wrappers import ServiceProxyWrapper
+ from markov.gazebo_tracker.abs_tracker import AbstractTracker
+ import markov.gazebo_tracker.constants as consts
+-from deepracer_msgs.srv import SetVisualColors
++from deepracer_msgs.srv import SetVisualColor, SetVisualColors
+ 
+ 
+ class SetVisualColorTracker(AbstractTracker):
+@@ -114,12 +114,13 @@ class SetVisualColorTracker(AbstractTracker):
+             if self.visual_name_map.values():
+                 req = SetVisualColors.Request()
+ 
+-                req.visual_names = self.visual_name_map.values()
+-                req.link_names = self.link_name_map.values()
+-                req.ambients = self.ambient_map.values()
+-                req.diffuses = self.diffuse_map.values()
+-                req.speculars = self.specular_map.values()
+-                req.emissives = self.emissive_map.values()
++                # ROS2 message arrays need lists, not dict views
++                req.visual_names = list(self.visual_name_map.values())
++                req.link_names = list(self.link_name_map.values())
++                req.ambients = list(self.ambient_map.values())
++                req.diffuses = list(self.diffuse_map.values())
++                req.speculars = list(self.specular_map.values())
++                req.emissives = list(self.emissive_map.values())
+                 self.set_visual_colors(req)
+ 
+             self.visual_name_map = OrderedDict()
+diff --git a/bundle/markov/gazebo_tracker/trackers/set_visual_transparency_tracker.py b/bundle/markov/gazebo_tracker/trackers/set_visual_transparency_tracker.py
+index aafd196..50742ca 100644
+--- a/bundle/markov/gazebo_tracker/trackers/set_visual_transparency_tracker.py
++++ b/bundle/markov/gazebo_tracker/trackers/set_visual_transparency_tracker.py
+@@ -98,9 +98,10 @@ class SetVisualTransparencyTracker(AbstractTracker):
+             if self.visual_name_map.values():
+                 req = SetVisualTransparencies.Request()
+ 
+-                req.visual_names = self.visual_name_map.values()
+-                req.link_names = self.link_name_map.values()
+-                req.transparencies = self.transparency_map.values()
++                # ROS2 message arrays need lists, not dict views
++                req.visual_names = list(self.visual_name_map.values())
++                req.link_names = list(self.link_name_map.values())
++                req.transparencies = list(self.transparency_map.values())
+                 self.set_visual_transparencies(req)
+ 
+             self.visual_name_map = OrderedDict()
+-- 
+2.39.3 (Apple Git-146)
+

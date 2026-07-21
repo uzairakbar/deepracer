@@ -1,14 +1,14 @@
-From 4ef79efac844698ddda2249d0ed8a49086b3a9f0 Mon Sep 17 00:00:00 2001
+From eed3d58bc4bf92a7d459b4225df111af8ecba43d Mon Sep 17 00:00:00 2001
 From: Uzair Akbar <uzairakbar025@gmail.com>
 Date: Wed, 1 Jul 2026 05:03:21 -0400
-Subject: [PATCH 07/20] Assign unique ports to Gazebo
+Subject: [PATCH 07/23] Assign unique ports to Gazebo
 
 ---
  docker/files/ml-code/entrypoint.sh | 10 ++++++++++
  1 file changed, 10 insertions(+)
 
 diff --git a/docker/files/ml-code/entrypoint.sh b/docker/files/ml-code/entrypoint.sh
-index 15d7441..0e7c8ca 100755
+index 08d6bb9..7d53d8a 100755
 --- a/docker/files/ml-code/entrypoint.sh
 +++ b/docker/files/ml-code/entrypoint.sh
 @@ -52,6 +52,16 @@ export ROS_DOMAIN_ID=$(ros_domain_from_user "${USER:-deepracer}")
@@ -29,5 +29,5 @@ index 15d7441..0e7c8ca 100755
  export PYTHONPATH="/opt/ml/code"
  
 -- 
-2.47.3
+2.39.3 (Apple Git-146)
 

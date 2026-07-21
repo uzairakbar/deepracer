@@ -32,12 +32,12 @@ You can use the packaged default reward function, or define a custom one:
         ```python
         def reward_function(params):
             """Example of rewarding the agent for lap completion"""
-            
+
             if params["progress"] >= 100:
                 reward = 1
             else:
                 reward = 0
-            
+
             return float(reward)
         ```
 
@@ -70,7 +70,7 @@ You can use the packaged default reward function, or define a custom one:
         ```
 
 !!! tip
-    For more examples and design ideas, see the AWS DeepRacer catalog of 
+    For more examples and design ideas, see the AWS DeepRacer catalog of
     [reward function examples](https://docs.aws.amazon.com/solutions/latest/deepracer-on-aws/create-a-model.html#sample-reward-functions).
 
 ## Agent Config

@@ -1,0 +1,129 @@
+From 8c44f535b065ec69d96f0153581ef304dcc2eb66 Mon Sep 17 00:00:00 2001
+From: Uzair Akbar <uzairakbar025@gmail.com>
+Date: Tue, 21 Jul 2026 04:35:27 -0400
+Subject: [PATCH 21/23] fix(sim): stop bot_car wheel links shadowing racecar's
+ off-track check
+
+The gazebo plugin cached link states by bare link name; bot_car shares
+all four wheel link names with racecar, so with NUMBER_OF_BOT_CARS>0 the
+racecar's wheel lookups returned bot-car wheels (always on track) and
+is_offtrack never fired. Cache scoped model::link keys too, restore the
+legacy scoped LINK_NAMES, and log loudly when link states come back
+missing instead of silently dropping them.
+---
+ .../markov/agent_ctrl/rollout_agent_ctrl.py   |  3 ++
+ bundle/markov/environments/constants.py       |  5 ++-
+ .../src/deepracer_gazebo_system_plugin.cpp    | 13 ++++++
+ .../test/unit/test_model_link_states.cpp      | 45 +++++++++++++++++++
+ 4 files changed, 64 insertions(+), 2 deletions(-)
+
+diff --git a/bundle/markov/agent_ctrl/rollout_agent_ctrl.py b/bundle/markov/agent_ctrl/rollout_agent_ctrl.py
+index 2ccdc91..7e5fc94 100644
+--- a/bundle/markov/agent_ctrl/rollout_agent_ctrl.py
++++ b/bundle/markov/agent_ctrl/rollout_agent_ctrl.py
+@@ -623,6 +623,9 @@ class RolloutCtrl(AgentCtrlInterface, ObserverInterface, AbstractTracker):
+             LOG.debug("Link states exist but first element is None")
+         
+         link_points = [self.make_link_points(link_state) for link_state in link_states if link_state is not None]
++        if len(link_points) != len(self._agent_link_name_list_):
++            LOG.error("Some link states missing (%s), off-track check unreliable this step",
++                      self._agent_link_name_list_)
+ 
+         current_car_pose = car_model_state.pose
+         try:
+diff --git a/bundle/markov/environments/constants.py b/bundle/markov/environments/constants.py
+index e1d5862..0218bd9 100644
+--- a/bundle/markov/environments/constants.py
++++ b/bundle/markov/environments/constants.py
+@@ -28,8 +28,9 @@ NUMBER_OF_LIDAR_SECTORS = 8
+ # Max clipping distance for sector lidar sensor
+ SECTOR_LIDAR_CLIPPING_DIST = 2.0
+ 
+-LINK_NAMES = ['left_rear_wheel', 'left_front_wheel',
+-              'right_rear_wheel', 'right_front_wheel']
++# model-scoped: bot_car shares these wheel link names, bare names hit the wrong car
++LINK_NAMES = ['racecar::left_rear_wheel', 'racecar::left_front_wheel',
++              'racecar::right_rear_wheel', 'racecar::right_front_wheel']
+ 
+ # List of required velocity topics, one topic per wheel
+ VELOCITY_TOPICS = ['/racecar/left_rear_wheel_velocity_controller/commands',
+diff --git a/bundle/src/deepracer_gazebo_system_plugin/src/deepracer_gazebo_system_plugin.cpp b/bundle/src/deepracer_gazebo_system_plugin/src/deepracer_gazebo_system_plugin.cpp
+index d40d478..01bee0a 100644
+--- a/bundle/src/deepracer_gazebo_system_plugin/src/deepracer_gazebo_system_plugin.cpp
++++ b/bundle/src/deepracer_gazebo_system_plugin/src/deepracer_gazebo_system_plugin.cpp
+@@ -848,6 +848,19 @@ void DeepRacerGazeboSystemPlugin::PostUpdate(const UpdateInfo &/*_info*/,
+             }
+             
+             link_states_cache_[n->Data()] = snapshot;
++
++            // also cache under "model::link" — bare names collide when models
++            // share link names (racecar vs bot_car wheels)
++            auto p = parent_.find(e);
++            while (p != parent_.end() && models_.find(p->second) == models_.end()) {
++                p = parent_.find(p->second);
++            }
++            if (p != parent_.end()) {
++                auto mn = name_by_entity_.find(p->second);
++                if (mn != name_by_entity_.end()) {
++                    link_states_cache_[mn->second + "::" + n->Data()] = snapshot;
++                }
++            }
+             return true;
+         });
+ 
+diff --git a/bundle/src/deepracer_gazebo_system_plugin/test/unit/test_model_link_states.cpp b/bundle/src/deepracer_gazebo_system_plugin/test/unit/test_model_link_states.cpp
+index 7a4c8f5..89bc3bb 100644
+--- a/bundle/src/deepracer_gazebo_system_plugin/test/unit/test_model_link_states.cpp
++++ b/bundle/src/deepracer_gazebo_system_plugin/test/unit/test_model_link_states.cpp
+@@ -383,3 +383,48 @@ TEST_F(DeepRacerPluginModelLinkStatesTest, GetLinkStatesBasic)
+     EXPECT_NEAR(response->link_states[0].twist.linear.y, 0.2, 1e-6);
+     EXPECT_NEAR(response->link_states[0].twist.linear.z, 0.3, 1e-6);
+ }
++
++TEST_F(DeepRacerPluginModelLinkStatesTest, GetLinkStatesScopedNamesDisambiguateDuplicateLinks)
++{
++    // racecar and bot_car share wheel link names; scoped lookups must return
++    // each model's own link, not whichever won the bare-name cache slot
++    auto racecar = CreateModel("racecar");
++    auto botCar = CreateModel("bot_car_0");
++    gz::math::Pose3d racecarWheelPose(1.0, 1.0, 0.0, 0.0, 0.0, 0.0);
++    gz::math::Pose3d botCarWheelPose(9.0, 9.0, 0.0, 0.0, 0.0, 0.0);
++    CreateLink("left_rear_wheel", racecar, racecarWheelPose);
++    CreateLink("left_rear_wheel", botCar, botCarWheelPose);
++
++    // rebuild snapshot cache with the new entities
++    gz::sim::UpdateInfo updateInfo;
++    plugin_->PostUpdate(updateInfo, *realECM_);
++
++    auto node = rclcpp::Node::make_shared("test_client");
++    auto client = node->create_client<deepracer_msgs::srv::GetLinkStates>("/get_link_states");
++    ASSERT_TRUE(client->wait_for_service(std::chrono::seconds(5)));
++
++    auto request = std::make_shared<deepracer_msgs::srv::GetLinkStates::Request>();
++    request->link_names = {"racecar::left_rear_wheel", "bot_car_0::left_rear_wheel",
++                           "left_rear_wheel"};
++    request->reference_frames = {"world", "world", "world"};
++
++    auto future = client->async_send_request(request);
++    auto executor = rclcpp::executors::SingleThreadedExecutor();
++    executor.add_node(node);
++    auto status = executor.spin_until_future_complete(future, std::chrono::seconds(5));
++    ASSERT_EQ(status, rclcpp::FutureReturnCode::SUCCESS);
++
++    auto response = future.get();
++    EXPECT_TRUE(response->success);
++    ASSERT_EQ(response->link_states.size(), 3);
++    EXPECT_EQ(response->status[0], 1);
++    EXPECT_EQ(response->status[1], 1);
++    // bare name still resolves (back-compat), but which model wins is undefined
++    EXPECT_EQ(response->status[2], 1);
++
++    // each scoped lookup returns its own model's wheel
++    EXPECT_NEAR(response->link_states[0].pose.position.x, 1.0, 1e-6);
++    EXPECT_NEAR(response->link_states[0].pose.position.y, 1.0, 1e-6);
++    EXPECT_NEAR(response->link_states[1].pose.position.x, 9.0, 1e-6);
++    EXPECT_NEAR(response->link_states[1].pose.position.y, 9.0, 1e-6);
++}
+-- 
+2.39.3 (Apple Git-146)
+
