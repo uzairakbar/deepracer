@@ -33,8 +33,8 @@ is used. <br>See [Configuring Environments](../guide/configuring.md) for an exam
 | `UPPER_LANE_CHANGE_TIME` | float (s) | `5.0` | Maximum time between bot-car lane changes. |
 | `LANE_CHANGE_DISTANCE` | float (m) | `1.0` | Distance over which a lane change completes. |
 | `MIN_DISTANCE_BETWEEN_OBSTACLES` | float (%) | `16.0` | Minimum distance between obstacle centers as %age of track length. |
-| `RESET_BEHIND_DIST` | float (m) | `2.0` | Minimum distance to obstacle(s) at spawn time. |
-| `RESET_AHEAD_DIST` | float (m) | `2.0` | Meters ahead for mercy reset teleport. |
+| `RESET_BEHIND_DIST` | float (m) | `1.5` | Minimum distance to obstacle(s) at spawn time. |
+| `RESET_AHEAD_DIST` | float (m) | `1.0` | Meters ahead for mercy reset teleport. |
 | `ENABLE_MERCY_RESET` | bool | `true` | Teleports car ahead of nearby object after repeated crashes. |
 | `MAX_RESETS_AFTER_CRASH` | int | `3` | Number of crashes to trigger "mercy reset" |
 
