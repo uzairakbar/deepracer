@@ -1,0 +1,340 @@
+From bc6542260ddfb04c4b6cd1b2c174ab18c4511590 Mon Sep 17 00:00:00 2001
+From: Uzair Akbar <uzairakbar025@gmail.com>
+Date: Tue, 21 Jul 2026 04:35:58 -0400
+Subject: [PATCH 22/22] fix(sim): scope visual lookups by model; fix
+ double-prefixed link names
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+Visual snapshot cache and the command-apply link maps were keyed by bare
+link name, colliding when models share link names (racecar vs bot_car) —
+blink, car color and randomizer ops could land on the wrong car. Key
+visuals as model::link::visual, share one dual-keyed link-entity map,
+and let GetVisualNames accept scoped, bare or double-prefixed requests
+while returning scoped names. Also fix blink_effect and
+model_visual_randomizer double-prefixing already-scoped body_names,
+which silently matched zero visuals.
+---
+ .../visual/model_visual_randomizer.py         |   4 +-
+ .../visual_effects/effects/blink_effect.py    |   4 +-
+ .../src/deepracer_gazebo_system_plugin.cpp    | 135 ++++++++++--------
+ .../test/unit/test_model_link_states.cpp      |  44 ++++++
+ 4 files changed, 125 insertions(+), 62 deletions(-)
+
+diff --git a/bundle/markov/domain_randomizations/visual/model_visual_randomizer.py b/bundle/markov/domain_randomizations/visual/model_visual_randomizer.py
+index 70d97dc..cb4d504 100644
+--- a/bundle/markov/domain_randomizations/visual/model_visual_randomizer.py
++++ b/bundle/markov/domain_randomizations/visual/model_visual_randomizer.py
+@@ -80,7 +80,9 @@ class ModelVisualRandomizer(AbstractRandomizer):
+ 
+         # Get all model's link names
+         body_names = get_model_prop(GetModelProperties.Request(model_name=self.model_name)).body_names
+-        link_names = ["%s::%s" % (model_name, b) for b in body_names]
++        # body_names already come back "model::link" scoped, don't double-prefix
++        link_names = [b if b.startswith(model_name + "::") else "%s::%s" % (model_name, b)
++                      for b in body_names]
+ 
+         # Convert filters to sets
+         link_name_filter = set(link_name_filter) if link_name_filter is not None else None
+diff --git a/bundle/markov/visual_effects/effects/blink_effect.py b/bundle/markov/visual_effects/effects/blink_effect.py
+index 0db2fc0..47cc46a 100644
+--- a/bundle/markov/visual_effects/effects/blink_effect.py
++++ b/bundle/markov/visual_effects/effects/blink_effect.py
+@@ -68,7 +68,9 @@ class BlinkEffect(AbstractEffect):
+ 
+         # Get all model's link names
+         body_names = get_model_prop(GetModelProperties.Request(model_name=self.model_name)).body_names
+-        link_names = ["%s::%s" % (self.model_name, b) for b in body_names]
++        # body_names already come back "model::link" scoped, don't double-prefix
++        link_names = [b if b.startswith(self.model_name + "::") else "%s::%s" % (self.model_name, b)
++                      for b in body_names]
+ 
+         res = get_visual_names(GetVisualNames.Request(link_names=link_names))
+         get_visuals_req = GetVisuals.Request(link_names=res.link_names,
+diff --git a/bundle/src/deepracer_gazebo_system_plugin/src/deepracer_gazebo_system_plugin.cpp b/bundle/src/deepracer_gazebo_system_plugin/src/deepracer_gazebo_system_plugin.cpp
+index 01bee0a..eac349d 100644
+--- a/bundle/src/deepracer_gazebo_system_plugin/src/deepracer_gazebo_system_plugin.cpp
++++ b/bundle/src/deepracer_gazebo_system_plugin/src/deepracer_gazebo_system_plugin.cpp
+@@ -41,6 +41,33 @@ void DeepRacerGazeboSystemPlugin::Configure(const Entity &/*_entity*/,
+                 "DeepRacer Gazebo System Plugin: Configuration complete");
+ }
+ 
++//////////////////////////////////////////////////
++// Link name -> entity, keyed both bare ("left_rear_wheel") and scoped
++// ("racecar::left_rear_wheel"). Bare keys collide across models (racecar vs
++// bot_car wheels), so commands should use scoped names; bare kept for compat.
++static std::unordered_map<std::string, Entity> buildLinkEntityMap(
++    EntityComponentManager &_ecm)
++{
++    std::unordered_map<std::string, Entity> map;
++    _ecm.Each<components::Link, components::Name>(
++        [&](const Entity &e, const components::Link*, const components::Name *n) {
++            map[n->Data()] = e;
++            Entity p = e;
++            while (true) {
++                auto *pc = _ecm.Component<components::ParentEntity>(p);
++                if (!pc) break;
++                p = pc->Data();
++                if (_ecm.Component<components::Model>(p)) {
++                    auto *mn = _ecm.Component<components::Name>(p);
++                    if (mn) map[mn->Data() + "::" + n->Data()] = e;
++                    break;
++                }
++            }
++            return true;
++        });
++    return map;
++}
++
+ //////////////////////////////////////////////////
+ void DeepRacerGazeboSystemPlugin::PreUpdate(const UpdateInfo &/*_info*/,
+                                            EntityComponentManager &_ecm)
+@@ -221,15 +248,8 @@ void DeepRacerGazeboSystemPlugin::PreUpdate(const UpdateInfo &/*_info*/,
+         
+         if (!link_state_commands_.empty()) {
+             // Build entity maps once for all link commands
+-            std::unordered_map<std::string, Entity> linkEntityMap;
+-            std::unordered_map<std::string, Entity> referenceEntityMap;
+-            
+-            _ecm.Each<components::Link, components::Name>(
+-                [&](const Entity &e, const components::Link*, const components::Name *n) {
+-                    linkEntityMap[n->Data()] = e;
+-                    referenceEntityMap[n->Data()] = e;
+-                    return true;
+-                });
++            auto linkEntityMap = buildLinkEntityMap(_ecm);
++            std::unordered_map<std::string, Entity> referenceEntityMap(linkEntityMap);
+             _ecm.Each<components::Model, components::Name>(
+                 [&](const Entity &e, const components::Model*, const components::Name *n) {
+                     referenceEntityMap[n->Data()] = e;
+@@ -329,13 +349,7 @@ void DeepRacerGazeboSystemPlugin::PreUpdate(const UpdateInfo &/*_info*/,
+         std::lock_guard<std::mutex> lock(command_queue_mtx_);
+         
+         if (!visual_color_commands_.empty()) {
+-            // Build link entity map once for all visual commands
+-            std::unordered_map<std::string, Entity> linkEntityMap;
+-            _ecm.Each<components::Link, components::Name>(
+-                [&](const Entity &e, const components::Link*, const components::Name *n) {
+-                    linkEntityMap[n->Data()] = e;
+-                    return true;
+-                });
++            auto linkEntityMap = buildLinkEntityMap(_ecm);
+             
+             while (!visual_color_commands_.empty()) {
+                 auto cmd = visual_color_commands_.front();
+@@ -415,12 +429,7 @@ void DeepRacerGazeboSystemPlugin::PreUpdate(const UpdateInfo &/*_info*/,
+         std::lock_guard<std::mutex> lock(command_queue_mtx_);
+         
+         if (!visual_transparency_commands_.empty()) {
+-            std::unordered_map<std::string, Entity> linkEntityMap;
+-            _ecm.Each<components::Link, components::Name>(
+-                [&](const Entity &e, const components::Link*, const components::Name *n) {
+-                    linkEntityMap[n->Data()] = e;
+-                    return true;
+-                });
++            auto linkEntityMap = buildLinkEntityMap(_ecm);
+             
+             while (!visual_transparency_commands_.empty()) {
+                 auto cmd = visual_transparency_commands_.front();
+@@ -487,12 +496,7 @@ void DeepRacerGazeboSystemPlugin::PreUpdate(const UpdateInfo &/*_info*/,
+         std::lock_guard<std::mutex> lock(command_queue_mtx_);
+         
+         if (!visual_visible_commands_.empty()) {
+-            std::unordered_map<std::string, Entity> linkEntityMap;
+-            _ecm.Each<components::Link, components::Name>(
+-                [&](const Entity &e, const components::Link*, const components::Name *n) {
+-                    linkEntityMap[n->Data()] = e;
+-                    return true;
+-                });
++            auto linkEntityMap = buildLinkEntityMap(_ecm);
+             
+             while (!visual_visible_commands_.empty()) {
+                 auto cmd = visual_visible_commands_.front();
+@@ -528,12 +532,7 @@ void DeepRacerGazeboSystemPlugin::PreUpdate(const UpdateInfo &/*_info*/,
+         std::lock_guard<std::mutex> lock(command_queue_mtx_);
+         
+         if (!visual_pose_commands_.empty()) {
+-            std::unordered_map<std::string, Entity> linkEntityMap;
+-            _ecm.Each<components::Link, components::Name>(
+-                [&](const Entity &e, const components::Link*, const components::Name *n) {
+-                    linkEntityMap[n->Data()] = e;
+-                    return true;
+-                });
++            auto linkEntityMap = buildLinkEntityMap(_ecm);
+             
+             while (!visual_pose_commands_.empty()) {
+                 auto cmd = visual_pose_commands_.front();
+@@ -575,12 +574,7 @@ void DeepRacerGazeboSystemPlugin::PreUpdate(const UpdateInfo &/*_info*/,
+         std::lock_guard<std::mutex> lock(command_queue_mtx_);
+         
+         if (!visual_mesh_commands_.empty()) {
+-            std::unordered_map<std::string, Entity> linkEntityMap;
+-            _ecm.Each<components::Link, components::Name>(
+-                [&](const Entity &e, const components::Link*, const components::Name *n) {
+-                    linkEntityMap[n->Data()] = e;
+-                    return true;
+-                });
++            auto linkEntityMap = buildLinkEntityMap(_ecm);
+             
+             while (!visual_mesh_commands_.empty()) {
+                 auto cmd = visual_mesh_commands_.front();
+@@ -849,7 +843,7 @@ void DeepRacerGazeboSystemPlugin::PostUpdate(const UpdateInfo &/*_info*/,
+             
+             link_states_cache_[n->Data()] = snapshot;
+ 
+-            // also cache under "model::link" — bare names collide when models
++            // also cache under "model::link", bare names collide when models
+             // share link names (racecar vs bot_car wheels)
+             auto p = parent_.find(e);
+             while (p != parent_.end() && models_.find(p->second) == models_.end()) {
+@@ -871,11 +865,24 @@ void DeepRacerGazeboSystemPlugin::PostUpdate(const UpdateInfo &/*_info*/,
+             
+             auto linkNameIt = name_by_entity_.find(p->Data());
+             if (linkNameIt == name_by_entity_.end()) return true;
+-            
+-            std::string key = linkNameIt->second + "::" + n->Data();
+-            
++
++            // key by "model::link::visual" — bare link names collide when models
++            // share link names (racecar vs bot_car wheels)
++            std::string scoped_link = linkNameIt->second;
++            auto mp = parent_.find(p->Data());
++            while (mp != parent_.end() && models_.find(mp->second) == models_.end()) {
++                mp = parent_.find(mp->second);
++            }
++            if (mp != parent_.end()) {
++                auto mn = name_by_entity_.find(mp->second);
++                if (mn != name_by_entity_.end()) {
++                    scoped_link = mn->second + "::" + scoped_link;
++                }
++            }
++            std::string key = scoped_link + "::" + n->Data();
++
+             VisualStateSnapshot snapshot;
+-            snapshot.link_name = linkNameIt->second;
++            snapshot.link_name = scoped_link;
+             
+             auto poseComp = _ecm.Component<components::Pose>(e);
+             if (poseComp) {
+@@ -1193,30 +1200,38 @@ void DeepRacerGazeboSystemPlugin::getVisualNamesCallback(
+         bool get_all = request->link_names.empty();
+         
+         for (const auto &[key, snapshot] : visual_states_cache_) {
+-            size_t separator = key.find("::");
++            // key is "model::link::visual" — split at the LAST "::"
++            size_t separator = key.rfind("::");
+             if (separator == std::string::npos) continue;
+-            
+-            std::string link_name = key.substr(0, separator);
++
++            std::string link_name = key.substr(0, separator);   // "model::link"
+             std::string visual_name = key.substr(separator + 2);
+-            
++
+             if (!get_all) {
++                // bare tail of the cached link ("model::link" -> "link")
++                size_t tail_sep = link_name.rfind("::");
++                std::string bare = (tail_sep == std::string::npos)
++                    ? link_name : link_name.substr(tail_sep + 2);
++
+                 bool found = false;
+                 for (const auto &requested_link : request->link_names) {
+-                    // Fix: Strip model prefix (e.g., "racecar::base_link" -> "base_link")
+-                    std::string requested_link_stripped = requested_link;
+-                    size_t prefix_sep = requested_link.find("::");
+-                    if (prefix_sep != std::string::npos) {
+-                        requested_link_stripped = requested_link.substr(prefix_sep + 2);
+-                    }
+-                    
+-                    if (requested_link_stripped == link_name) {
+-                        found = true;
+-                        break;
++                    // callers send "model::link", bare "link", or accidentally
++                    // "model::model::link" — normalize to the last two segments
++                    std::string req = requested_link;
++                    size_t last = req.rfind("::");
++                    if (last != std::string::npos) {
++                        size_t prev = req.rfind("::", last - 1);
++                        if (prev != std::string::npos) {
++                            req = req.substr(prev + 2);
++                        }
++                        if (req == link_name) { found = true; break; }
++                    } else if (req == bare) {
++                        found = true; break;
+                     }
+                 }
+                 if (!found) continue;
+             }
+-            
++
+             response->visual_names.push_back(visual_name);
+             response->link_names.push_back(link_name);
+         }
+diff --git a/bundle/src/deepracer_gazebo_system_plugin/test/unit/test_model_link_states.cpp b/bundle/src/deepracer_gazebo_system_plugin/test/unit/test_model_link_states.cpp
+index 89bc3bb..6614d94 100644
+--- a/bundle/src/deepracer_gazebo_system_plugin/test/unit/test_model_link_states.cpp
++++ b/bundle/src/deepracer_gazebo_system_plugin/test/unit/test_model_link_states.cpp
+@@ -8,11 +8,13 @@
+ #include <deepracer_msgs/srv/set_model_states.hpp>
+ #include <deepracer_msgs/srv/get_link_states.hpp>
+ #include <deepracer_msgs/srv/set_link_states.hpp>
++#include <deepracer_msgs/srv/get_visual_names.hpp>
+ 
+ #include <gz/sim/EntityComponentManager.hh>
+ #include <gz/sim/EventManager.hh>
+ #include <gz/sim/components/Model.hh>
+ #include <gz/sim/components/Link.hh>
++#include <gz/sim/components/Visual.hh>
+ #include <gz/sim/components/Name.hh>
+ #include <gz/sim/components/Pose.hh>
+ #include <gz/sim/components/LinearVelocity.hh>
+@@ -428,3 +430,45 @@ TEST_F(DeepRacerPluginModelLinkStatesTest, GetLinkStatesScopedNamesDisambiguateD
+     EXPECT_NEAR(response->link_states[1].pose.position.x, 9.0, 1e-6);
+     EXPECT_NEAR(response->link_states[1].pose.position.y, 9.0, 1e-6);
+ }
++
++TEST_F(DeepRacerPluginModelLinkStatesTest, GetVisualNamesScopedDisambiguatesDuplicateLinks)
++{
++    // duplicate link names across models: scoped request must only return the
++    // requested model's visuals, with scoped link names in the response
++    auto racecar = CreateModel("racecar");
++    auto botCar = CreateModel("bot_car_0");
++    auto racecarWheel = CreateLink("left_rear_wheel", racecar);
++    auto botCarWheel = CreateLink("left_rear_wheel", botCar);
++
++    auto makeVisual = [&](const std::string& name, gz::sim::Entity parentLink) {
++        gz::sim::Entity e = realECM_->CreateEntity();
++        realECM_->CreateComponent(e, gz::sim::components::Visual());
++        realECM_->CreateComponent(e, gz::sim::components::Name(name));
++        realECM_->CreateComponent(e, gz::sim::components::ParentEntity(parentLink));
++        return e;
++    };
++    makeVisual("wheel_visual", racecarWheel);
++    makeVisual("wheel_visual", botCarWheel);
++
++    gz::sim::UpdateInfo updateInfo;
++    plugin_->PostUpdate(updateInfo, *realECM_);
++
++    auto node = rclcpp::Node::make_shared("test_client");
++    auto client = node->create_client<deepracer_msgs::srv::GetVisualNames>("/get_visual_names");
++    ASSERT_TRUE(client->wait_for_service(std::chrono::seconds(5)));
++
++    auto request = std::make_shared<deepracer_msgs::srv::GetVisualNames::Request>();
++    request->link_names = {"racecar::left_rear_wheel"};
++
++    auto future = client->async_send_request(request);
++    auto executor = rclcpp::executors::SingleThreadedExecutor();
++    executor.add_node(node);
++    auto status = executor.spin_until_future_complete(future, std::chrono::seconds(5));
++    ASSERT_EQ(status, rclcpp::FutureReturnCode::SUCCESS);
++
++    auto response = future.get();
++    EXPECT_TRUE(response->success);
++    ASSERT_EQ(response->visual_names.size(), 1u);
++    EXPECT_EQ(response->visual_names[0], "wheel_visual");
++    EXPECT_EQ(response->link_names[0], "racecar::left_rear_wheel");
++}
+-- 
+2.39.3 (Apple Git-146)
+
