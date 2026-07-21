@@ -102,7 +102,7 @@ def main() -> None:
     parser.add_argument(
         "--deep",
         action="store_true",
-        help="also delete cached deepracer images (Docker/Podman images, Apptainer SIFs)",
+        help="also delete cached deepracer images",
     )
     args = parser.parse_args()
     for binary in ("docker", "podman"):

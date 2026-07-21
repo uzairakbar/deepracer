@@ -1,7 +1,6 @@
 import subprocess
 
 import pytest
-
 from deepracer import clean
 
 
