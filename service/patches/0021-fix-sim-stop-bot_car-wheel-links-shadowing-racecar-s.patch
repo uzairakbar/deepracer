@@ -1,7 +1,7 @@
 From 8c44f535b065ec69d96f0153581ef304dcc2eb66 Mon Sep 17 00:00:00 2001
 From: Uzair Akbar <uzairakbar025@gmail.com>
 Date: Tue, 21 Jul 2026 04:35:27 -0400
-Subject: [PATCH 21/22] fix(sim): stop bot_car wheel links shadowing racecar's
+Subject: [PATCH 21/23] fix(sim): stop bot_car wheel links shadowing racecar's
  off-track check
 
 The gazebo plugin cached link states by bare link name; bot_car shares

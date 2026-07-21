@@ -1,7 +1,7 @@
 From 80b064ddc70ef5fd770f4b701ec4205e32499867 Mon Sep 17 00:00:00 2001
 From: Uzair Akbar <uzairakbar025@gmail.com>
 Date: Tue, 30 Jun 2026 03:49:53 -0400
-Subject: [PATCH 02/22] Handle arm64 and amd64 architectures
+Subject: [PATCH 02/23] Handle arm64 and amd64 architectures
 
 ---
  .github/workflows/build-and-push.yml | 84 ++++++++++++++++++++++++++++

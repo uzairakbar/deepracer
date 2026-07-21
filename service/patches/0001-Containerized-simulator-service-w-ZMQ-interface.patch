@@ -1,7 +1,7 @@
 From 88cef9b9df1c38830769565b70226ce7d57b52c0 Mon Sep 17 00:00:00 2001
 From: Uzair Akbar <uzairakbar025@gmail.com>
 Date: Tue, 30 Jun 2026 02:15:29 -0400
-Subject: [PATCH 01/22] Containerized simulator service w/ ZMQ interface
+Subject: [PATCH 01/23] Containerized simulator service w/ ZMQ interface
 
 ---
  build-zmqsim.sh                               |  48 +++++

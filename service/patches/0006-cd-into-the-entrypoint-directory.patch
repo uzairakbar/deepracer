@@ -1,7 +1,7 @@
 From 7996a946f5b146ed3c99c8ad521af213a6c337b6 Mon Sep 17 00:00:00 2001
 From: Uzair Akbar <uzairakbar025@gmail.com>
 Date: Wed, 1 Jul 2026 03:45:21 -0400
-Subject: [PATCH 06/22] cd into the entrypoint directory
+Subject: [PATCH 06/23] cd into the entrypoint directory
 
 ---
  docker/files/ml-code/entrypoint.sh | 9 ++++++++-

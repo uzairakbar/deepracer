@@ -1,7 +1,7 @@
 From f9488824022f1086755458514beceef4fbe9f067 Mon Sep 17 00:00:00 2001
 From: Uzair Akbar <uzairakbar025@gmail.com>
 Date: Wed, 1 Jul 2026 15:59:05 -0400
-Subject: [PATCH 14/22] Keep images low resolution
+Subject: [PATCH 14/23] Keep images low resolution
 
 ---
  bundle/urdf/deepracer/racecar.gazebo | 12 ++++++------

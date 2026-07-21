@@ -1,7 +1,7 @@
 From 869468a710710bf075ba7a35f5cc806641dc5a9c Mon Sep 17 00:00:00 2001
 From: Uzair Akbar <uzairakbar025@gmail.com>
 Date: Wed, 1 Jul 2026 10:54:21 -0400
-Subject: [PATCH 10/22] Remove redundant MinIO setup
+Subject: [PATCH 10/23] Remove redundant MinIO setup
 
 ---
  docker/Dockerfile.zmqsim           |  8 +---

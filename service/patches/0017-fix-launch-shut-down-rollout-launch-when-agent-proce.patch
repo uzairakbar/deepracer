@@ -1,7 +1,7 @@
 From 7646fae312672d06177d688db6b15676a555b021 Mon Sep 17 00:00:00 2001
 From: Uzair Akbar <uzairakbar025@gmail.com>
 Date: Thu, 2 Jul 2026 21:20:19 -0400
-Subject: [PATCH 17/22] fix(launch): shut down rollout launch when agent
+Subject: [PATCH 17/23] fix(launch): shut down rollout launch when agent
  process exits
 
 markov's log_and_exit terminates only the agent process; without an

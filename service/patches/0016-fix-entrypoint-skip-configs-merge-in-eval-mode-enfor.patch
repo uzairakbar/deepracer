@@ -1,7 +1,7 @@
 From 8492f8005b6e5b351bd9bd1c781547c24615b0a6 Mon Sep 17 00:00:00 2001
 From: Uzair Akbar <uzairakbar025@gmail.com>
 Date: Thu, 2 Jul 2026 21:19:33 -0400
-Subject: [PATCH 16/22] fix(entrypoint): skip /configs merge in eval mode;
+Subject: [PATCH 16/23] fix(entrypoint): skip /configs merge in eval mode;
  enforce WORLD_NAME consistency
 
 The /configs/environment_params.yaml merge into training_params.yaml ran

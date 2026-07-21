@@ -1,7 +1,7 @@
 From 16b9d5b0d2a3025751c3c540da1a36bd37a74e9a Mon Sep 17 00:00:00 2001
 From: Uzair Akbar <uzairakbar025@gmail.com>
 Date: Wed, 1 Jul 2026 15:59:28 -0400
-Subject: [PATCH 15/22] remove the cap on CPUs
+Subject: [PATCH 15/23] remove the cap on CPUs
 
 ---
  .../launch/empty_world.launch.py                         | 9 +++++----

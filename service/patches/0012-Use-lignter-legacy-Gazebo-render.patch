@@ -1,7 +1,7 @@
 From 2b79ffbc413443aba4cb135b0bc663bed4112959 Mon Sep 17 00:00:00 2001
 From: Uzair Akbar <uzairakbar025@gmail.com>
 Date: Wed, 1 Jul 2026 15:55:26 -0400
-Subject: [PATCH 12/22] Use lignter, legacy Gazebo render
+Subject: [PATCH 12/23] Use lignter, legacy Gazebo render
 
 ---
  docker/files/ml-code/entrypoint.sh | 5 +++++

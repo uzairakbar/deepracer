@@ -1,7 +1,7 @@
 From 942af47680021a3449f6f79b6f8f7965cb4d907d Mon Sep 17 00:00:00 2001
 From: Uzair Akbar <uzairakbar025@gmail.com>
 Date: Tue, 30 Jun 2026 22:29:25 -0400
-Subject: [PATCH 05/22] Handle matplotlib backend clashing with jupyter
+Subject: [PATCH 05/23] Handle matplotlib backend clashing with jupyter
 
 ---
  docker/files/ml-code/entrypoint.sh | 5 +++++

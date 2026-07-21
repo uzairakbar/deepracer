@@ -1,7 +1,7 @@
 From 39b7aeb8a3383a1d3fbc3bfef6d2e8c0d173e7d0 Mon Sep 17 00:00:00 2001
 From: Uzair Akbar <uzairakbar025@gmail.com>
 Date: Wed, 1 Jul 2026 15:55:47 -0400
-Subject: [PATCH 13/22] Turn off cameras for speed.
+Subject: [PATCH 13/23] Turn off cameras for speed.
 
 ---
  docker/files/ml-code/entrypoint.sh | 6 ++++++

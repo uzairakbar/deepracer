@@ -1,7 +1,7 @@
 From ffdbaad0e9c6fe9e85d20e6d0d24299cf6d7318d Mon Sep 17 00:00:00 2001
 From: Uzair Akbar <uzairakbar025@gmail.com>
 Date: Sat, 4 Jul 2026 17:11:31 -0400
-Subject: [PATCH 20/22] chore(service): drop fork CI workflow + default
+Subject: [PATCH 20/23] chore(service): drop fork CI workflow + default
  OUT_IMAGE to ghcr.io deepracer:v0
 
 ---
