@@ -1,7 +1,7 @@
-From a686ad74f01553fe9a72e55015e43b78cdcb69b2 Mon Sep 17 00:00:00 2001
+From 03a3591f5456ab11df82201e21042eae874b197d Mon Sep 17 00:00:00 2001
 From: Uzair Akbar <uzairakbar025@gmail.com>
 Date: Wed, 1 Jul 2026 10:53:01 -0400
-Subject: [PATCH 08/20] Drop redundant awscli install
+Subject: [PATCH 08/22] Drop redundant awscli install
 
 ---
  docker/Dockerfile.build-core | 9 ++++-----
@@ -28,5 +28,5 @@ index 8da181e..f86434b 100644
  # Copy Bundle
  COPY bundle/ /opt/amazon
 -- 
-2.47.3
+2.39.3 (Apple Git-146)
 

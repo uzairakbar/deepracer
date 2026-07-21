@@ -1,7 +1,7 @@
-From b2b59d58f8720f098b482288ef3f87e596d6eb00 Mon Sep 17 00:00:00 2001
+From 8492f8005b6e5b351bd9bd1c781547c24615b0a6 Mon Sep 17 00:00:00 2001
 From: Uzair Akbar <uzairakbar025@gmail.com>
 Date: Thu, 2 Jul 2026 21:19:33 -0400
-Subject: [PATCH 16/20] fix(entrypoint): skip /configs merge in eval mode;
+Subject: [PATCH 16/22] fix(entrypoint): skip /configs merge in eval mode;
  enforce WORLD_NAME consistency
 
 The /configs/environment_params.yaml merge into training_params.yaml ran
@@ -21,7 +21,7 @@ yaml in all modes with a log line for verification.
  1 file changed, 24 insertions(+), 3 deletions(-)
 
 diff --git a/docker/files/ml-code/entrypoint.sh b/docker/files/ml-code/entrypoint.sh
-index f97e65b..ca02aee 100755
+index beeabd5..6e733ba 100755
 --- a/docker/files/ml-code/entrypoint.sh
 +++ b/docker/files/ml-code/entrypoint.sh
 @@ -89,7 +89,14 @@ echo "EVAL_WORLD_NAME: ${EVAL_WORLD_NAME}"
@@ -39,7 +39,7 @@ index f97e65b..ca02aee 100755
      WORLD_NAME="${EVAL_WORLD_NAME}"
      echo "Running evaluation mode with ${WORLD_NAME} track."
  else
-@@ -188,9 +195,23 @@ echo "NUM_WORKERS:                          \"1\""
+@@ -193,9 +200,23 @@ echo "NUM_WORKERS:                          \"1\""
  
  S3_YAML_NAME="training_params.yaml"
  SOURCE_YAML=/configs/environment_params.yaml
@@ -67,5 +67,5 @@ index f97e65b..ca02aee 100755
  
  # --------------------------------------------------------------------------- #
 -- 
-2.47.3
+2.39.3 (Apple Git-146)
 

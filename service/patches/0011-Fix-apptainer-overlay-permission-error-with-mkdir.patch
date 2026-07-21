@@ -1,7 +1,7 @@
-From 78283769fecbbb733f52671e8484fd3b9548a405 Mon Sep 17 00:00:00 2001
+From b67541ba4cf4005d4f6eaba1a8b7454796a656bf Mon Sep 17 00:00:00 2001
 From: Uzair Akbar <uzairakbar025@gmail.com>
 Date: Wed, 1 Jul 2026 12:07:36 -0400
-Subject: [PATCH 11/20] Fix apptainer overlay permission error with mkdir
+Subject: [PATCH 11/22] Fix apptainer overlay permission error with mkdir
 
 ---
  docker/Dockerfile.zmqsim           | 7 ++++++-
@@ -30,7 +30,7 @@ index 3616fba..896b444 100644
  
  WORKDIR /opt/ml/code
 diff --git a/docker/files/ml-code/entrypoint.sh b/docker/files/ml-code/entrypoint.sh
-index 22aaf8c..f9b035a 100755
+index 86ce5d4..4cadf3e 100755
 --- a/docker/files/ml-code/entrypoint.sh
 +++ b/docker/files/ml-code/entrypoint.sh
 @@ -112,8 +112,13 @@ S3_ROOT="/${S3_BUCKET}"
@@ -50,5 +50,5 @@ index 22aaf8c..f9b035a 100755
  # model_metadata == agent_params.json (action space / sensors / network)
  cp /configs/agent_params.json "${S3_ROOT}/${MODEL_METADATA_S3_KEY}"
 -- 
-2.47.3
+2.39.3 (Apple Git-146)
 

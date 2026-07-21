@@ -1,14 +1,14 @@
-From 89597b6c6254016511d06236b127714c1cb1b36b Mon Sep 17 00:00:00 2001
+From 467d83b913e047a98e15520d47fa54b59e27d7c0 Mon Sep 17 00:00:00 2001
 From: Uzair Akbar <uzairakbar025@gmail.com>
 Date: Tue, 30 Jun 2026 20:47:12 -0400
-Subject: [PATCH 04/20] Assign unique ports to MinIO and ROS_DOMAIN_ID
+Subject: [PATCH 04/22] Assign unique ports to MinIO and ROS_DOMAIN_ID
 
 ---
  docker/files/ml-code/entrypoint.sh | 51 ++++++++++++++++++++++--------
  1 file changed, 37 insertions(+), 14 deletions(-)
 
 diff --git a/docker/files/ml-code/entrypoint.sh b/docker/files/ml-code/entrypoint.sh
-index 1dbac62..2f6e7e1 100755
+index e505cb7..3a5bb03 100755
 --- a/docker/files/ml-code/entrypoint.sh
 +++ b/docker/files/ml-code/entrypoint.sh
 @@ -29,6 +29,23 @@ export ROS_IP=127.0.0.1
@@ -77,5 +77,5 @@ index 1dbac62..2f6e7e1 100755
  
  # --------------------------------------------------------------------------- #
 -- 
-2.47.3
+2.39.3 (Apple Git-146)
 

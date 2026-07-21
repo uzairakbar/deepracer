@@ -1,14 +1,14 @@
-From c82707fe33632fdac956fe6e27357cec10f36e0b Mon Sep 17 00:00:00 2001
+From 942af47680021a3449f6f79b6f8f7965cb4d907d Mon Sep 17 00:00:00 2001
 From: Uzair Akbar <uzairakbar025@gmail.com>
 Date: Tue, 30 Jun 2026 22:29:25 -0400
-Subject: [PATCH 05/20] Handle matplotlib backend clashing with jupyter
+Subject: [PATCH 05/22] Handle matplotlib backend clashing with jupyter
 
 ---
  docker/files/ml-code/entrypoint.sh | 5 +++++
  1 file changed, 5 insertions(+)
 
 diff --git a/docker/files/ml-code/entrypoint.sh b/docker/files/ml-code/entrypoint.sh
-index 2f6e7e1..d295494 100755
+index 3a5bb03..e7dcccb 100755
 --- a/docker/files/ml-code/entrypoint.sh
 +++ b/docker/files/ml-code/entrypoint.sh
 @@ -24,6 +24,11 @@ export ROS_DISTRO=jazzy
@@ -24,5 +24,5 @@ index 2f6e7e1..d295494 100755
  export ROS_IP=127.0.0.1
  export ENABLE_KINESIS=false
 -- 
-2.47.3
+2.39.3 (Apple Git-146)
 

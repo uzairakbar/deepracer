@@ -1,7 +1,7 @@
-From a69dfabd9e05a9a44b87d8028637910bdb3b2c42 Mon Sep 17 00:00:00 2001
+From 80b064ddc70ef5fd770f4b701ec4205e32499867 Mon Sep 17 00:00:00 2001
 From: Uzair Akbar <uzairakbar025@gmail.com>
 Date: Tue, 30 Jun 2026 03:49:53 -0400
-Subject: [PATCH 02/20] Handle arm64 and amd64 architectures
+Subject: [PATCH 02/22] Handle arm64 and amd64 architectures
 
 ---
  .github/workflows/build-and-push.yml | 84 ++++++++++++++++++++++++++++
@@ -100,7 +100,7 @@ index 0000000..65cb2ab
 +            "${IMAGE}:${TAG}-arm64"
 +          docker buildx imagetools inspect "${IMAGE}:${TAG}"
 diff --git a/build-zmqsim.sh b/build-zmqsim.sh
-index 45851da..ed350c8 100755
+index 45851da..ac8894b 100755
 --- a/build-zmqsim.sh
 +++ b/build-zmqsim.sh
 @@ -13,7 +13,11 @@ cd "$(dirname "$0")"
@@ -127,5 +127,5 @@ index 45851da..ed350c8 100755
 +
  echo "==> Done: ${OUT_IMAGE}"
 -- 
-2.47.3
+2.39.3 (Apple Git-146)
 

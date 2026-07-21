@@ -1,7 +1,7 @@
-From 93443ac69ab078923a7f9c066e5aeee6ce3a827d Mon Sep 17 00:00:00 2001
+From bfc9ba98b942e5534d717655e51138d2dd3e9fa6 Mon Sep 17 00:00:00 2001
 From: Uzair Akbar <uzairakbar025@gmail.com>
 Date: Thu, 2 Jul 2026 21:20:48 -0400
-Subject: [PATCH 18/20] fix(entrypoint): exit non-zero with FATAL log when
+Subject: [PATCH 18/22] fix(entrypoint): exit non-zero with FATAL log when
  simulation launch exits
 
 Previously exec'd ros2 launch never reported failure: if the launch
@@ -14,10 +14,10 @@ a grep-able FATAL line when it returns.
  1 file changed, 14 insertions(+), 1 deletion(-)
 
 diff --git a/docker/files/ml-code/entrypoint.sh b/docker/files/ml-code/entrypoint.sh
-index ca02aee..ef462f9 100755
+index 6e733ba..166b19b 100755
 --- a/docker/files/ml-code/entrypoint.sh
 +++ b/docker/files/ml-code/entrypoint.sh
-@@ -237,4 +237,17 @@ Xvfb "${DISPLAY}" -ac -screen 0 1400x900x24 > /opt/ml/xvfb.log 2>&1 &
+@@ -242,4 +242,17 @@ Xvfb "${DISPLAY}" -ac -screen 0 1400x900x24 > /opt/ml/xvfb.log 2>&1 &
  sleep 2
  
  echo "Launching simulation: ros2 launch deepracer_simulation_environment ${SIMULATION_LAUNCH_FILE}"
@@ -37,5 +37,5 @@ index ca02aee..ef462f9 100755
 +echo "FATAL: simulation launch exited (rc=${rc}); terminating container." >&2
 +exit 1
 -- 
-2.47.3
+2.39.3 (Apple Git-146)
 

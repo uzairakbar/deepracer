@@ -1,7 +1,7 @@
-From 3b9a046c9d04b364531dad6c4902dfb159aa6bf5 Mon Sep 17 00:00:00 2001
+From 88cef9b9df1c38830769565b70226ce7d57b52c0 Mon Sep 17 00:00:00 2001
 From: Uzair Akbar <uzairakbar025@gmail.com>
 Date: Tue, 30 Jun 2026 02:15:29 -0400
-Subject: [PATCH 01/20] Containerized simulator service w/ ZMQ interface
+Subject: [PATCH 01/22] Containerized simulator service w/ ZMQ interface
 
 ---
  build-zmqsim.sh                               |  48 +++++
@@ -16,7 +16,7 @@ Subject: [PATCH 01/20] Containerized simulator service w/ ZMQ interface
  .../launch/racecar.launch.py                  |   2 +-
  .../launch/racetrack_with_racecar.launch.py   |   4 +-
  .../launch/rollout_rl_agent.launch.py         |   2 +-
- docker/Dockerfile.zmqsim                      |  45 +++++
+ docker/Dockerfile.zmqsim                      |  45 ++++
  docker/files/ml-code/entrypoint.sh            | 192 ++++++++++++++++++
  14 files changed, 503 insertions(+), 67 deletions(-)
  create mode 100755 build-zmqsim.sh
@@ -587,7 +587,7 @@ index 0000000..ba88c5a
 +ENTRYPOINT ["/opt/ml/code/entrypoint.sh"]
 diff --git a/docker/files/ml-code/entrypoint.sh b/docker/files/ml-code/entrypoint.sh
 new file mode 100755
-index 0000000..e641f28
+index 0000000..45cf6ab
 --- /dev/null
 +++ b/docker/files/ml-code/entrypoint.sh
 @@ -0,0 +1,192 @@
@@ -784,5 +784,5 @@ index 0000000..e641f28
 +echo "Launching simulation: ros2 launch deepracer_simulation_environment ${SIMULATION_LAUNCH_FILE}"
 +exec ros2 launch deepracer_simulation_environment "${SIMULATION_LAUNCH_FILE}"
 -- 
-2.47.3
+2.39.3 (Apple Git-146)
 

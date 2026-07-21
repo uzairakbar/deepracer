@@ -1,7 +1,7 @@
-From 02d12c2475dc34c98b443d107b02a31d4da8426f Mon Sep 17 00:00:00 2001
+From ffdbaad0e9c6fe9e85d20e6d0d24299cf6d7318d Mon Sep 17 00:00:00 2001
 From: Uzair Akbar <uzairakbar025@gmail.com>
 Date: Sat, 4 Jul 2026 17:11:31 -0400
-Subject: [PATCH 20/20] chore(service): drop fork CI workflow + default
+Subject: [PATCH 20/22] chore(service): drop fork CI workflow + default
  OUT_IMAGE to ghcr.io deepracer:v0
 
 ---
@@ -101,7 +101,7 @@ index 65cb2ab..0000000
 -            "${IMAGE}:${TAG}-arm64"
 -          docker buildx imagetools inspect "${IMAGE}:${TAG}"
 diff --git a/build-zmqsim.sh b/build-zmqsim.sh
-index ed350c8..9e1c2ba 100755
+index ac8894b..0b25726 100755
 --- a/build-zmqsim.sh
 +++ b/build-zmqsim.sh
 @@ -16,7 +16,7 @@ VERSION="$(jq -r '.simapp' VERSION)"
@@ -114,5 +114,5 @@ index ed350c8..9e1c2ba 100755
  
  # Default to the host architecture (native build, no emulation). Override with
 -- 
-2.47.3
+2.39.3 (Apple Git-146)
 

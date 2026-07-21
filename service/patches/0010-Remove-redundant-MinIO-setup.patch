@@ -1,7 +1,7 @@
-From fb0270790ad9bbf89d40c5ee320881b5d98498f9 Mon Sep 17 00:00:00 2001
+From 869468a710710bf075ba7a35f5cc806641dc5a9c Mon Sep 17 00:00:00 2001
 From: Uzair Akbar <uzairakbar025@gmail.com>
 Date: Wed, 1 Jul 2026 10:54:21 -0400
-Subject: [PATCH 10/20] Remove redundant MinIO setup
+Subject: [PATCH 10/22] Remove redundant MinIO setup
 
 ---
  docker/Dockerfile.zmqsim           |  8 +---
@@ -35,7 +35,7 @@ index ba88c5a..3616fba 100644
  
  WORKDIR /opt/ml/code
 diff --git a/docker/files/ml-code/entrypoint.sh b/docker/files/ml-code/entrypoint.sh
-index 0e7c8ca..22aaf8c 100755
+index 7d53d8a..86ce5d4 100755
 --- a/docker/files/ml-code/entrypoint.sh
 +++ b/docker/files/ml-code/entrypoint.sh
 @@ -95,68 +95,28 @@ NUMBER_OF_OBSTACLES=$(yq .NUMBER_OF_OBSTACLES /configs/environment_params.yaml)
@@ -138,7 +138,7 @@ index 0e7c8ca..22aaf8c 100755
  echo "TRAINING_JOB_ARN:                     \"local-sim\""
  echo "METRICS_S3_BUCKET:                    \"${S3_BUCKET}\""
  echo "METRICS_S3_OBJECT_KEY:                \"${S3_PREFIX}/training_metrics.json\""
-@@ -219,8 +175,7 @@ SOURCE_YAML=/configs/environment_params.yaml
+@@ -224,8 +180,7 @@ SOURCE_YAML=/configs/environment_params.yaml
  # merge defaults (file 0) with /configs overrides (file 1)
  yq eval-all 'select(fileIndex == 0) * select(fileIndex == 1)' "${DEFAULT_YAML}" "${SOURCE_YAML}" \
      > "/opt/ml/code/${S3_YAML_NAME}"
@@ -149,5 +149,5 @@ index 0e7c8ca..22aaf8c 100755
  # --------------------------------------------------------------------------- #
  # Environment for the modern launch chain
 -- 
-2.47.3
+2.39.3 (Apple Git-146)
 
